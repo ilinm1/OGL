@@ -60,6 +60,28 @@ void GlfwFramebufferSizeCallback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
     Ogl::UpdateNDCToPixelMatrix(width, height);
+    Ogl::Invoke<Ogl::WindowResizeEvent>({ width, height });
+}
+
+void GlfwKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    Ogl::Invoke<Ogl::KeyPressEvent>({ key, scancode, action, mods });
+}
+
+void GlfwCharCallback(GLFWwindow* window, unsigned int codepoint)
+{
+    Ogl::Invoke<Ogl::CharacterEvent>({ .Utf32 = codepoint });
+}
+
+void GlfwMouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
+{
+    Ogl::Invoke<Ogl::MousePressEvent>({ button, action, mods });
+}
+
+void GlfwScrollCallback(GLFWwindow* window, double offsetX, double offsetY)
+{
+    Ogl::ScrollEvent ev = { offsetX, offsetY };
+    Ogl::Invoke<Ogl::ScrollEvent>(ev);
 }
 
 //buffer operations
@@ -199,6 +221,10 @@ void Ogl::Initialize(int windowWidth, int windowHeight, std::string windowName, 
 
     //setting callbacks
     glfwSetFramebufferSizeCallback(Window, GlfwFramebufferSizeCallback);
+    glfwSetKeyCallback(Window, GlfwKeyCallback);
+    glfwSetCharCallback(Window, GlfwCharCallback);
+    glfwSetMouseButtonCallback(Window, GlfwMouseButtonCallback);
+    glfwSetScrollCallback(Window, GlfwScrollCallback);
 
     if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)))
         throw std::runtime_error("Failed to initialize GLAD.");
@@ -317,7 +343,7 @@ void Ogl::UpdateLoop()
 
             //substituting buffer's data by layer's newly generated one
             size_t dataSize = layer->RenderingDataUsed;
-            if (dataSize > 0 || !layer->SavePreviousData)
+            if (dataSize > 0 || layer->Redraw)
             {
                 if (dataSize > layer->BlockSize)
                 {
@@ -329,6 +355,8 @@ void Ogl::UpdateLoop()
 
                 if (dataSize > 0)
                     glBufferSubData(GL_ARRAY_BUFFER, layer->BlockOffset, layer->BlockUsed, layer->RenderingData);
+
+                layer->Redraw = false;
             }
 
             //setting depth and transform matrix

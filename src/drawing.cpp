@@ -2,23 +2,6 @@
 
 //drawing methods
 
-//converts size in NDC/world space to pixels
-Vec2 Ogl::SizeToPixels(Vec2 size, bool inWorld)
-{
-    if (inWorld)
-        size = WorldToNDCMatrix.TransformVector(size);
-    return NDCToPixelMatrix.TransformVector(size);
-}
-
-//converts size in pixels to NDC/in-world meters
-Vec2 Ogl::SizeFromPixels(Vec2 size, bool inWorld)
-{
-    size = NDCToPixelMatrix.Inverse().TransformVector(size);
-    if (inWorld)
-        size = WorldToNDCMatrix.Inverse().TransformVector(size);
-    return size;
-}
-
 //writes 'count' vertices to the buffer 'buf' of size 'size'
 void Ogl::Layer::WriteVertexData(const Vec2* coords, const Vec2* texCoords, TextureData texture, size_t count)
 {
@@ -117,18 +100,30 @@ void Ogl::Layer::DrawRect(Vec2 a, Vec2 b, TextureData texture, bool matchResolut
 }
 
 //ascii only
-void Ogl::Layer::DrawText(Vec2 pos, std::string text, float scale, TextureGroup font)
+//if 'multiline' is set then new line will be created after reading newline
+void Ogl::Layer::DrawText(Vec2 pos, std::string text, float scale, TextureGroup font, bool multiline)
 {
-    for (int i = 0; i < text.length(); i++)
+    if (IsWorldSpace)
+        scale /= CameraScale;
+
+    int x = 0;
+    for (char character : text)
     {
-        unsigned int characterIndex = text[i] - 0x20;
+        if (character == '\n')
+        {
+            pos -= SizeFromPixels(Vec2(0, font.MaxHeight), IsWorldSpace) * scale;
+            x = 0;
+            continue;
+        }
+
+        unsigned int characterIndex = character - 0x20;
         characterIndex = characterIndex < 0 ? 0 : characterIndex;
         characterIndex = characterIndex > font.Size - 1 ? 0 : characterIndex;
 
         TextureData characterTexture = Textures[font.Index + characterIndex];
-        Vec2 texSize = Vec2(characterTexture.Width, characterTexture.Height) * scale;
-        texSize = SizeFromPixels(texSize, IsWorldSpace);
+        Vec2 characterSize = SizeFromPixels(Vec2(characterTexture.Width, characterTexture.Height), IsWorldSpace) * scale;
 
-        DrawRect(pos + Vec2(texSize.X * i, 0), pos + Vec2(texSize.X * (i + 1), texSize.Y), characterTexture);
+        DrawRect(pos + Vec2(characterSize.X * x, 0), pos + Vec2(characterSize.X * (x + 1), characterSize.Y), characterTexture);
+        x++;
     }
 }

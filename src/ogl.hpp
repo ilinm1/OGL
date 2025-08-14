@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <string>
 #include <filesystem>
+#include <unordered_set>
 #include <GLFW/glfw3.h>
 #include "vec2.hpp"
 #include "mat3.hpp"
@@ -22,6 +23,70 @@
 
 namespace Ogl
 {
+    //input events
+
+    template <class T>
+    using EventHandler = void(*)(T, void*);
+
+    template <class T>
+    struct Subscription
+    {
+        EventHandler<T> Handler;
+        void* Data;
+
+        friend bool operator==(const Subscription<T>& l, const Subscription<T>& r)
+        {
+            return l.Handler == r.Handler && l.Data == r.Data;
+        }
+    };
+
+    template <class T>
+    struct std::hash<Ogl::Subscription<T>>
+    {
+        std::size_t operator()(const Ogl::Subscription<T>& sub) const noexcept
+        {
+            return ((std::hash<void*>()(sub.Handler) ^ (std::hash<void*>()(sub.Data) << 1)) >> 1);
+        }
+    };
+
+    struct WindowResizeEvent
+    {
+        int Width;
+        int Height;
+    };
+
+    struct KeyPressEvent
+    {
+        int Key;
+        int Scancode;
+        int Action;
+        int Modifiers;
+    };
+
+    struct CharacterEvent
+    {
+        union //unicode codepoint
+        {
+            unsigned int Utf32;
+            unsigned short Utf16[2];
+            unsigned char Utf8[4];
+        };
+    };
+
+    struct MousePressEvent
+    {
+        int Button;
+        int Action;
+        int Modifiers;
+    };
+
+    struct ScrollEvent
+    {
+        double OffsetX;
+        double OffsetY;
+    };
+
+    //texture data
     struct TextureData
     {
         std::filesystem::path Path;
@@ -36,6 +101,8 @@ namespace Ogl
     struct TextureGroup
     {
         std::filesystem::path Path;
+        unsigned int MaxWidth;
+        unsigned int MaxHeight;
         size_t Size = 0;
         size_t Index = 0;
     };
@@ -51,7 +118,7 @@ namespace Ogl
 
         unsigned int DrawingDepth = DEPTH_MIN;
         bool IsWorldSpace = false;
-        bool SavePreviousData = true; //if set data from the previous 'Draw' call will be displayed, otherwise all of it will be discarded
+        bool Redraw = false; //if set data from the previous 'Draw' call will be discarded even if nothing was generated during the last call; will be reset afterwards
 
         size_t RenderingDataSize = 0;
         size_t RenderingDataUsed = 0;
@@ -80,16 +147,54 @@ namespace Ogl
         void WriteVertexData(const Vec2* coords, const Vec2* texCoords, TextureData texture, size_t count);
         void DrawTriangle(Vec2, Vec2 b, Vec2 c, TextureData texture, bool matchResolution = false);
         void DrawRect(Vec2 a, Vec2 b, TextureData texture, bool matchResolution = false);
-        void DrawText(Vec2 pos, std::string text, float scale, TextureGroup font);
+        void DrawText(Vec2 pos, std::string text, float scale, TextureGroup font, bool multiline = true);
     };
 
     void Log(std::string msg);
+
+    //window methods
+
+    std::tuple<unsigned int, unsigned int> GetWindowSize();
+    void SetWindowSize(unsigned int width, unsigned int height);
+    void SetWindowFullscreen(bool fullscreen);
+    void SetWindowName(std::string name);
 
     //input methods
 
     Vec2 GetCursorPos();
     bool IsKeyPressed(int key);
     bool IsMouseButtonPressed(int button);
+
+    //input event method implementations - since they depend on types from this header
+    //and templates must be defined in headers it's easier to just put them here
+
+    template <class T>
+    std::unordered_set<Subscription<T>>& GetSubscriptions()
+    {
+        static std::unordered_set<Subscription<T>> subs;
+        return subs;
+    }
+
+    template <class T>
+    void Subscribe(EventHandler<T> handler, void* data = NULL)
+    {
+        GetSubscriptions<T>().insert({ handler, data });
+    }
+
+    template <class T>
+    void Unsubscribe(EventHandler<T> handler, void* data = NULL)
+    {
+        GetSubscriptions<T>().erase({ handler, data });
+    }
+
+    template <class T>
+    void Invoke(T event)
+    {
+        for (Subscription sub : GetSubscriptions<T>())
+        {
+            sub.Handler(event, sub.Data);
+        }
+    }
 
     //camera methods
 
@@ -99,12 +204,8 @@ namespace Ogl
     void SetCameraSize(Vec2 size);
     void SetCameraRotation(float rotation);
     void SetCameraScale(float zoom);
-
-    //layer methods
-
-    void AddLayer(Layer* layer);
-    void RemoveLayer(Layer* layer);
-    void ClearLayers();
+    Vec2 SizeToPixels(Vec2 size, bool inWorld);
+    Vec2 SizeFromPixels(Vec2 size, bool inWorld);
 
     //texture methods
 
@@ -114,17 +215,11 @@ namespace Ogl
     TextureData ResolveTexture(std::filesystem::path path);
     TextureGroup ResolveFont(std::filesystem::path path);
 
-    //scaling methods
+    //layer methods
 
-    Vec2 SizeToPixels(Vec2 size, bool inWorld);
-    Vec2 SizeFromPixels(Vec2 size, bool inWorld);
-
-    //window methods
-
-    std::tuple<unsigned int, unsigned int> GetWindowSize();
-    void SetWindowSize(unsigned int width, unsigned int height);
-    void SetWindowFullscreen(bool fullscreen);
-    void SetWindowName(std::string name);
+    void AddLayer(Layer* layer);
+    void RemoveLayer(Layer* layer);
+    void ClearLayers();
 
     //init, update
 
@@ -151,10 +246,6 @@ namespace Ogl
     inline Mat3 WorldToNDCMatrix;
     inline Mat3 NDCToPixelMatrix;
 
-    //layers
-    inline std::vector<Ogl::Layer*> Layers;
-    inline size_t VideoMemoryUsed; //by the VBO only
-
     //texture data
     inline unsigned int Atlas; //opengl texture id
     inline RectanglePacker AtlasPacker;
@@ -163,4 +254,8 @@ namespace Ogl
     inline std::vector<Ogl::TextureData> Textures;
     inline std::vector<Ogl::TextureGroup> Fonts;
     inline float TextureDataArray[TEXTURE_MAX * 4]; //texture positions and sizes relative to atlas (for shaders)
+
+    //layers
+    inline std::vector<Ogl::Layer*> Layers;
+    inline size_t VideoMemoryUsed; //by the VBO only
 }
