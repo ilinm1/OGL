@@ -1,52 +1,26 @@
 #include <format>
 #include <random>
-#include "../ogl.hpp"
+#include "ogl.hpp"
 
 #define PI 3.1415
 
 struct TriangleLayer : Ogl::Layer
 {
     Ogl::TextureData Texture;
-    Ogl::TextureGroup Font;
 
     TriangleLayer() : Ogl::Layer()
     {
-        Font = Ogl::ResolveFont("test.bdf");
         Texture = Ogl::ResolveTexture("test.png");
+        Redraw = true;
     }
 
     void Draw() override
     {
-        bool input = false;
-
-        if (Ogl::IsKeyPressed(GLFW_KEY_A))
-        {
-            input = true;
-            Ogl::SetCameraPosition(Ogl::CameraPosition + Vec2(0.05f, 0.0f));
-        }
-
-        if (Ogl::IsKeyPressed(GLFW_KEY_D))
-        {
-            input = true;
-            Ogl::SetCameraPosition(Ogl::CameraPosition + Vec2(-0.05f, 0.0f));
-        }
-
-        if (Ogl::IsKeyPressed(GLFW_KEY_W))
-        {
-            input = true;
-            Ogl::SetCameraScale(Ogl::CameraScale + 0.01f);
-        }
-
-        if (Ogl::IsKeyPressed(GLFW_KEY_S))
-        {
-            input = true;
-            Ogl::SetCameraScale(Ogl::CameraScale - 0.01f);
-        }
-
-        if (input)
-            DrawText(Vec2(-1.0f), std::format("Scale: {}%", static_cast<int>(Ogl::CameraScale * 100)), 0.5f, Font);
+        if (!Redraw)
+            return;
 
         DrawTriangle(Vec2(-0.75f, -0.75f), Vec2(0.75f, -0.75f), Vec2(0.0f, 0.75f), Texture);
+        Redraw = false;
     }
 };
 
@@ -109,7 +83,7 @@ struct BallLayer : Ogl::Layer
 
 int main()
 {
-    Ogl::Initialize(300, 300, "Test", false);
+    Ogl::Initialize(300, 300, "Ball", false);
     Ogl::SetCameraSize(Vec2(3.0f));
 
     TriangleLayer triangleLayer = {};
