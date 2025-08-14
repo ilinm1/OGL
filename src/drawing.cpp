@@ -51,7 +51,7 @@ void Ogl::Layer::WriteVertexData(const Vec2* coords, const Vec2* texCoords, Text
 }
 
 //draws a triangle from three points in world/screen space (depending on layer's space) with the specified texture
-//if 'repeat' is set the texture will be matched to it's real resolution, otherwise stretched to fully fit the triangle
+//if 'matchResolution' is set the texture will be matched to it's real resolution, otherwise stretched to fully fit the triangle
 void Ogl::Layer::DrawTriangle(Vec2 a, Vec2 b, Vec2 c, TextureData texture, bool matchResolution)
 {
     const Vec2 coords[3] = { a, b, c };
@@ -82,7 +82,7 @@ void Ogl::Layer::DrawTriangle(Vec2 a, Vec2 b, Vec2 c, TextureData texture, bool 
 }
 
 //draws a rectangle from two points in world/screen space (depending on layer's space) with the specified texture
-//if 'repeat' is set the texture will be matched to it's real resolution, otherwise stretched to fully fit the rectangle
+//if 'matchResolution' is set the texture will be matched to it's real resolution, otherwise stretched to fully fit the rectangle
 void Ogl::Layer::DrawRect(Vec2 a, Vec2 b, TextureData texture, bool matchResolution)
 {
     const Vec2 coords[6] =

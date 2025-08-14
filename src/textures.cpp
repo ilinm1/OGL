@@ -50,10 +50,24 @@ void WriteToAtlas(unsigned char* data, unsigned int x, unsigned int y, unsigned 
     for (int i = 0; i < height; i++)
     {
         unsigned int dataRow = flip ? height - i - 1 : i;
-        memcpy(
+        std::memcpy(
             Ogl::AtlasData + (Ogl::AtlasWidth * (i + y) + x) * IMAGE_CHANNELS,
             data + width * dataRow * IMAGE_CHANNELS,
             width * IMAGE_CHANNELS);
+    }
+}
+
+//writes zeroes to each channel of every pixel in the specified area
+void ZeroAtlas(unsigned int x, unsigned int y, unsigned int width, unsigned int height)
+{
+    if (x + width > Ogl::AtlasWidth || y + height > Ogl::AtlasHeight)
+        throw std::runtime_error("Tried to write out of atlas bounds.");
+
+    y = Ogl::AtlasHeight - y - height;
+
+    for (int i = 0; i < height; i++)
+    {
+        std::memset(Ogl::AtlasData + (Ogl::AtlasWidth * (i + y) + x) * IMAGE_CHANNELS, 0, width * IMAGE_CHANNELS);
     }
 }
 
@@ -154,7 +168,7 @@ Ogl::TextureGroup Ogl::LoadBdfFont(std::filesystem::path path)
     {
         std::getline(file, line);
 
-        if (line == "ENDFONT")
+        if (line.rfind("ENDFONT") == 0)
             break;
 
         if (line.rfind("STARTCHAR") == 0)
@@ -163,6 +177,8 @@ Ogl::TextureGroup Ogl::LoadBdfFont(std::filesystem::path path)
         if (line.rfind("ENCODING") == 0)
         {
             sscanf(line.substr(8).data(), "%d", &code);
+            if (code == 208)
+                int a = 1;
             get<0>(AtlasPacker.Rects.back().Data) = code;
         }
 
@@ -174,15 +190,13 @@ Ogl::TextureGroup Ogl::LoadBdfFont(std::filesystem::path path)
             if (offsetX > maxOffset || offsetY > maxOffset)
                 throw std::runtime_error("Glyph X/Y offset is too high.");
 
-            offsetX = std::max(offsetX, 0);
-            offsetY = std::max(offsetY, 0);
-            glyphRect.Width = width + offsetX, 
-            glyphRect.Height = height + offsetY;
-            get<2>(glyphRect.Data) = offsetX;
-            get<3>(glyphRect.Data) = offsetY;
+            glyphRect.Width = width + std::abs(offsetX), 
+            glyphRect.Height = height + std::abs(offsetY);
+            get<2>(glyphRect.Data) = std::max(-offsetX, 0);
+            get<3>(glyphRect.Data) = std::max(-offsetY, 0);
         }
 
-        if (line == "BITMAP")
+        if (line.rfind("BITMAP") == 0)
             get<1>(AtlasPacker.Rects.back().Data) = file.tellg();
     }
 
@@ -199,11 +213,14 @@ Ogl::TextureGroup Ogl::LoadBdfFont(std::filesystem::path path)
     std::sort(AtlasPacker.Rects.begin(), AtlasPacker.Rects.end(), [](Rect rect1, Rect rect2) { return get<0>(rect1.Data) < get<0>(rect2.Data); });
     for (Rect rect : AtlasPacker.Rects)
     {
+        ZeroAtlas(rect.X, rect.Y, rect.Width, rect.Height); //to avoid random garbage on edges of glyphs with non-zero offsets
+
         file.seekg(get<1>(rect.Data)); //going to the start of the bitmap
 
-        unsigned char buffer[IMAGE_CHANNELS * 4]; //4 cause we're writing 4 pixels per hexadecimal digit
+        unsigned char buffer[IMAGE_CHANNELS * 4]; //4 cause we're writing up to 4 pixels per hexadecimal digit
         int offsetX = get<2>(rect.Data);
         int offsetY = get<3>(rect.Data);
+
         for (int y = 0; y < rect.Height - offsetY; y++)
         {
             std::getline(file, line);
@@ -211,12 +228,21 @@ Ogl::TextureGroup Ogl::LoadBdfFont(std::filesystem::path path)
             for (int x = 0; x < line.length(); x++)
             {
                 char character = line[x];
+                if (character < '0') //ignoring whitespaces
+                    continue;
+
                 unsigned char value = character < '9' ? character - '0' : character - 'A' + 10; //hexadecimal digit to 4 bit value
-                for (int i = 0; i < 4; i++)
+
+                int pixels = rect.Width - offsetX - x * 4;
+                pixels = std::max(std::min(pixels, 4), 0);
+
+                for (int i = 0; i < pixels; i++)
                 {
                     *reinterpret_cast<unsigned int*>(buffer + i * IMAGE_CHANNELS) = value & (0b1000 >> i) ? std::numeric_limits<unsigned int>().max() : 0;
                 }
-                WriteToAtlas(buffer, rect.X + offsetX + x * 4, rect.Y + offsetY + y, 4, 1);
+
+                if (pixels != 0)
+                    WriteToAtlas(buffer, rect.X + offsetX + x * 4, rect.Y + offsetY + y, pixels, 1);
             }
         }
 
