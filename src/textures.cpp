@@ -147,7 +147,7 @@ std::vector<Ogl::TextureData> Ogl::LoadTextures(std::vector<std::filesystem::pat
 //barebones BDF font loader
 Ogl::TextureGroup Ogl::LoadBdfFont(std::filesystem::path path)
 {
-    TextureGroup result;
+    TextureGroup result = {};
 
     if (Atlas == 0)
         InitializeAtlas();
@@ -192,6 +192,13 @@ Ogl::TextureGroup Ogl::LoadBdfFont(std::filesystem::path path)
 
             glyphRect.Width = width + std::abs(offsetX), 
             glyphRect.Height = height + std::abs(offsetY);
+
+            if (glyphRect.Width > result.MaxWidth)
+                result.MaxWidth = glyphRect.Width;
+
+            if (glyphRect.Height > result.MaxHeight)
+                result.MaxHeight = glyphRect.Height;
+
             get<2>(glyphRect.Data) = std::max(-offsetX, 0);
             get<3>(glyphRect.Data) = std::max(-offsetY, 0);
         }
