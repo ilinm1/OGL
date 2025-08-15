@@ -49,7 +49,7 @@ void Ogl::Layer::DrawTriangle(Vec2 a, Vec2 b, Vec2 c, TextureData texture, bool 
     Vec2 texSize = Vec2(1);
     if (matchResolution)
     {
-        texSize = SizeToPixels(aabb, IsWorldSpace);
+        texSize = PointToPixels(aabb, IsWorldSpace);
         texSize.X /= texture.Width;
         texSize.Y /= texture.Height;
     }
@@ -81,7 +81,7 @@ void Ogl::Layer::DrawRect(Vec2 a, Vec2 b, TextureData texture, bool matchResolut
     Vec2 texSize = Vec2(1);
     if (matchResolution)
     {
-        texSize = SizeToPixels((a - b).Abs(), IsWorldSpace);
+        texSize = PointToPixels((a - b).Abs(), IsWorldSpace);
         texSize.X /= texture.Width;
         texSize.Y /= texture.Height;
     }
@@ -100,18 +100,19 @@ void Ogl::Layer::DrawRect(Vec2 a, Vec2 b, TextureData texture, bool matchResolut
 }
 
 //ascii only
+//'scale' sets the amount of NDC/in-world meters per glyph pixel
 //if 'multiline' is set then new line will be created after reading newline
 void Ogl::Layer::DrawText(Vec2 pos, std::string text, float scale, TextureGroup font, bool multiline)
 {
-    if (IsWorldSpace)
-        scale /= CameraScale;
+    //if (IsWorldSpace)
+    //    scale /= CameraScale;
 
     int x = 0;
     for (char character : text)
     {
         if (character == '\n')
         {
-            pos -= SizeFromPixels(Vec2(0, font.MaxHeight), IsWorldSpace) * scale;
+            pos.Y -= font.MaxHeight * scale;
             x = 0;
             continue;
         }
@@ -121,7 +122,7 @@ void Ogl::Layer::DrawText(Vec2 pos, std::string text, float scale, TextureGroup 
         characterIndex = characterIndex > font.Size - 1 ? 0 : characterIndex;
 
         TextureData characterTexture = Textures[font.Index + characterIndex];
-        Vec2 characterSize = SizeFromPixels(Vec2(characterTexture.Width, characterTexture.Height), IsWorldSpace) * scale;
+        Vec2 characterSize = Vec2(characterTexture.Width, characterTexture.Height) * scale;
 
         DrawRect(pos + Vec2(characterSize.X * x, 0), pos + Vec2(characterSize.X * (x + 1), characterSize.Y), characterTexture);
         x++;

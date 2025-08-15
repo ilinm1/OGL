@@ -347,8 +347,8 @@ void Ogl::UpdateLoop()
             {
                 if (dataSize > layer->BlockSize)
                 {
-                    Log(std::format("Layer no. {} has exceeded it's memory limit, expanding from {} to {} bytes.\n", i, layer->BlockSize, dataSize));
-                    SetLayerSize(layer, dataSize);
+                    Log(std::format("Layer no. {} has exceeded it's memory limit, expanding from {} to {} bytes.\n", i, layer->BlockSize, dataSize * 2));
+                    SetLayerSize(layer, dataSize * 2);
                 }
 
                 layer->BlockUsed = dataSize;

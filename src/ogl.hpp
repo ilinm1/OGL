@@ -204,8 +204,8 @@ namespace Ogl
     void SetCameraSize(Vec2 size);
     void SetCameraRotation(float rotation);
     void SetCameraScale(float zoom);
-    Vec2 SizeToPixels(Vec2 size, bool inWorld);
-    Vec2 SizeFromPixels(Vec2 size, bool inWorld);
+    Vec2 PointToPixels(Vec2 point, bool inWorld);
+    Vec2 PointFromPixels(Vec2 point, bool inWorld);
 
     //texture methods
 

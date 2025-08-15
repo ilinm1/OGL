@@ -66,19 +66,19 @@ void Ogl::SetCameraScale(float zoom)
     UpdateWorldToNDCMatrix();
 }
 
-//converts size in NDC/world space to pixels
-Vec2 Ogl::SizeToPixels(Vec2 size, bool inWorld)
+//converts point in NDC/world space to pixels
+Vec2 Ogl::PointToPixels(Vec2 point, bool inWorld)
 {
     if (inWorld)
-        size = WorldToNDCMatrix.TransformVector(size);
-    return NDCToPixelMatrix.TransformVector(size);
+        point = WorldToNDCMatrix.TransformVector(point);
+    return NDCToPixelMatrix.TransformVector(point);
 }
 
-//converts size in pixels to NDC/in-world meters
-Vec2 Ogl::SizeFromPixels(Vec2 size, bool inWorld)
+//converts point in pixels to NDC/in-world meters
+Vec2 Ogl::PointFromPixels(Vec2 point, bool inWorld)
 {
-    size = NDCToPixelMatrix.Inverse().TransformVector(size);
+    point = NDCToPixelMatrix.Inverse().TransformVector(point);
     if (inWorld)
-        size = WorldToNDCMatrix.Inverse().TransformVector(size);
-    return size;
+        point = WorldToNDCMatrix.Inverse().TransformVector(point);
+    return point;
 }
