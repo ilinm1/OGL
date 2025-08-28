@@ -104,9 +104,6 @@ void Ogl::Layer::DrawRect(Vec2 a, Vec2 b, TextureData texture, bool matchResolut
 //if 'multiline' is set then new line will be created after reading newline
 void Ogl::Layer::DrawText(Vec2 pos, std::string text, float scale, TextureGroup font, bool multiline)
 {
-    //if (IsWorldSpace)
-    //    scale /= CameraScale;
-
     int x = 0;
     for (char character : text)
     {

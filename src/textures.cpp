@@ -177,8 +177,6 @@ Ogl::TextureGroup Ogl::LoadBdfFont(std::filesystem::path path)
         if (line.rfind("ENCODING") == 0)
         {
             sscanf(line.substr(8).data(), "%d", &code);
-            if (code == 208)
-                int a = 1;
             get<0>(AtlasPacker.Rects.back().Data) = code;
         }
 
