@@ -11,7 +11,7 @@ struct Rect
 	unsigned int Width = 0;
 	unsigned int Height = 0;
 
-	std::tuple<int, int, int, int> Data; //not used for packing
+	std::tuple<long, long, long, long> Data; //not used for packing
 };
 
 struct RectanglePacker
@@ -41,8 +41,8 @@ struct RectanglePacker
 				if (width < rect.Width)
 					continue;
 
-				int dx = x + rect.Width - TotalWidth; dx = dx < 0 ? 0 : dx;
-				int dy = y + rect.Height - TotalHeight; dy = dy < 0 ? 0 : dy;
+				int dx = x + rect.Width - TotalWidth; dx = std::max(dx, 0);
+				int dy = y + rect.Height - TotalHeight; dy = std::max(dy, 0);
 				int ds = dx * TotalHeight + dy * TotalWidth + dx * dy;
 
 				if (ds < minDelta)

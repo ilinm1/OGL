@@ -6,7 +6,7 @@
 
 struct TriangleLayer : Ogl::Layer
 {
-    Ogl::TextureData Texture;
+    Ogl::Texture Texture;
 
     TriangleLayer() : Ogl::Layer()
     {
@@ -20,14 +20,12 @@ struct TriangleLayer : Ogl::Layer
             return;
 
         DrawTriangle(Vec2(-0.75f, -0.75f), Vec2(0.75f, -0.75f), Vec2(0.0f, 0.75f), Texture);
-        Redraw = false;
     }
 };
 
 struct BallLayer : Ogl::Layer
 {
-    bool ResourcesLoaded = false;
-    Ogl::TextureData Texture;
+    Ogl::Texture Texture;
 
     Vec2 BallPos = Vec2(0.0f);
     Vec2 BallVelocity;

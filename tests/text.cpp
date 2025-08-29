@@ -1,9 +1,11 @@
+#include <codecvt>
 #include "ogl.hpp"
 
 struct TextLayer : Ogl::Layer
 {
-    Ogl::TextureGroup Font;
-    std::string Text = "Use arrows to move the camera.\nScroll to zoom in/out.\nErase with backspace, insert a new line with enter.\n:)";
+    Ogl::BitmapFont Font;
+    std::string Text = "Use arrows to move the camera.\nScroll to zoom in/out.\nYou can use enter, backspace and paste with ctrl + C.\n:)";
+    std::wstring_convert<std::codecvt_utf8<unsigned int>, unsigned int> Utf32Converter;
 
     TextLayer() : Ogl::Layer()
     {
@@ -38,6 +40,12 @@ struct TextLayer : Ogl::Layer
             layer.Redraw = true;
         }
 
+        if (ev.Key == GLFW_KEY_V && ev.Modifiers & GLFW_MOD_CONTROL)
+        {
+            text.append(Ogl::GetClipboardContents());
+            layer.Redraw = true;
+        }
+
         if (ev.Key == GLFW_KEY_BACKSPACE && text.length() > 0)
         {
             text.resize(text.size() - 1);
@@ -48,7 +56,10 @@ struct TextLayer : Ogl::Layer
     static void OnCharacterReceived(Ogl::CharacterEvent ev, void* data)
     {
         TextLayer& layer = *reinterpret_cast<TextLayer*>(data);
-        layer.Text.push_back(ev.Utf8[0]);
+
+        //converting utf32 to utf8
+        layer.Text.append(layer.Utf32Converter.to_bytes(&ev.Codepoint, &ev.Codepoint + 1));
+
         layer.Redraw = true;
     }
 

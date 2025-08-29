@@ -1,6 +1,7 @@
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <algorithm>
 #include <glad/glad.h>
 #include <stb_image.h>
 #include <stb_image_write.h>
@@ -9,33 +10,12 @@
 
 //texture methods
 
-//todo: last texture kills first, prolly something with resize or write
-
 void InitializeAtlas()
 {
     glGenTextures(1, &Ogl::Atlas);
     glBindTexture(GL_TEXTURE_2D, Ogl::Atlas);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-}
-
-void UpdateTextureData()
-{
-    for (int i = 0; i < Ogl::Textures.size(); i++)
-    {
-        Ogl::TextureData& texture = Ogl::Textures[i];
-
-        //relative texture position
-        Ogl::TextureDataArray[i * 4] = static_cast<float>(texture.AtlasX) / Ogl::AtlasWidth; //4 cause there are 4 floats per texture
-        Ogl::TextureDataArray[i * 4 + 1] = static_cast<float>(Ogl::AtlasHeight - texture.AtlasY - texture.Height) / Ogl::AtlasHeight;
-
-        //relative texture size
-        Ogl::TextureDataArray[i * 4 + 2] = static_cast<float>(texture.Width) / Ogl::AtlasWidth;
-        Ogl::TextureDataArray[i * 4 + 3] = static_cast<float>(texture.Height) / Ogl::AtlasHeight;
-    }
-
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, Ogl::AtlasWidth, Ogl::AtlasHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, Ogl::AtlasData);
-    glUniform4fv(Ogl::UniformTextureDataArray, TEXTURE_MAX, Ogl::TextureDataArray);
 }
 
 //data pointing to the top-left pixel of the image, x & y specifying the left-bottom corner of the image area
@@ -93,13 +73,39 @@ void ResizeAtlas(unsigned int width, unsigned int height)
     }
 }
 
+Ogl::Texture AddTexture(std::filesystem::path path, Rect rect)
+{
+    Ogl::TextureDimensionsVector.push_back({ rect.X, rect.Y, rect.Width, rect.Height });
+    Ogl::TexturesToUpdate.push_back(Ogl::Textures.size());
+    Ogl::Textures.push_back({ path, Ogl::Textures.size() });
+    return Ogl::Textures.back();
+}
+
+void UpdateTextureData()
+{
+    size_t maxIndex = *std::max_element(Ogl::TexturesToUpdate.begin(), Ogl::TexturesToUpdate.end());
+    size_t requiredSsboSize = (maxIndex + 1) * sizeof(Ogl::TextureDimensions);
+    if (Ogl::Ssbo.Size < requiredSsboSize)
+        throw std::runtime_error("Out of video memory.");
+
+    for (size_t index : Ogl::TexturesToUpdate)
+    {
+        Ogl::TextureDimensions dimensions = Ogl::TextureDimensionsVector[index];
+        glBufferSubData(GL_SHADER_STORAGE_BUFFER, index * sizeof(Ogl::TextureDimensions), sizeof(Ogl::TextureDimensions), &dimensions);
+    }
+
+    Ogl::TexturesToUpdate.clear();
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, Ogl::AtlasWidth, Ogl::AtlasHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, Ogl::AtlasData);
+}
+
 //loads textures from the specified paths, adding them to atlas
-std::vector<Ogl::TextureData> Ogl::LoadTextures(std::vector<std::filesystem::path> paths)
+std::vector<Ogl::Texture> Ogl::LoadTextures(std::vector<std::filesystem::path> paths)
 {
     if (Atlas == 0)
         InitializeAtlas();
 
-    std::vector<Ogl::TextureData> result;
+    std::vector<Ogl::Texture> result;
 
     //getting texture rects
     for (int i = 0; i < paths.size(); i++)
@@ -132,9 +138,7 @@ std::vector<Ogl::TextureData> Ogl::LoadTextures(std::vector<std::filesystem::pat
         WriteToAtlas(data, rect.X, rect.Y, rect.Width, rect.Height);
         delete[] data;
 
-        TextureData texture = { path, rect.Width, rect.Height, rect.X, rect.Y, Textures.size() };
-        result.push_back(texture);
-        Textures.push_back(texture);
+        result.push_back(AddTexture(path, rect));
     }
     AtlasPacker.Rects.clear();
     
@@ -145,9 +149,9 @@ std::vector<Ogl::TextureData> Ogl::LoadTextures(std::vector<std::filesystem::pat
 }
 
 //barebones BDF font loader
-Ogl::TextureGroup Ogl::LoadBdfFont(std::filesystem::path path)
+Ogl::BitmapFont Ogl::LoadBdfFont(std::filesystem::path path)
 {
-    TextureGroup result = {};
+    BitmapFont result = {};
 
     if (Atlas == 0)
         InitializeAtlas();
@@ -168,18 +172,22 @@ Ogl::TextureGroup Ogl::LoadBdfFont(std::filesystem::path path)
     {
         std::getline(file, line);
 
+        //font end
         if (line.rfind("ENDFONT") == 0)
             break;
 
+        //new glyph
         if (line.rfind("STARTCHAR") == 0)
             AtlasPacker.Rects.emplace_back();
 
+        //settings glyph's encoding
         if (line.rfind("ENCODING") == 0)
         {
             sscanf(line.substr(8).data(), "%d", &code);
             get<0>(AtlasPacker.Rects.back().Data) = code;
         }
 
+        //glyph's bitmap size & offsets
         if (line.rfind("BBX") == 0)
         {
             Rect& glyphRect = AtlasPacker.Rects.back();
@@ -201,25 +209,46 @@ Ogl::TextureGroup Ogl::LoadBdfFont(std::filesystem::path path)
             get<3>(glyphRect.Data) = std::max(-offsetY, 0);
         }
 
+        //glyph's bitmap
         if (line.rfind("BITMAP") == 0)
             get<1>(AtlasPacker.Rects.back().Data) = file.tellg();
     }
-
-    //setting texture group data
-    result.Path = path;
-    result.Index = Textures.size();
-    result.Size = AtlasPacker.Rects.size();
 
     //packing glyph rects to atlas & resizing it
     AtlasPacker.Pack();
     ResizeAtlas(AtlasPacker.TotalWidth, AtlasPacker.TotalHeight);
 
-    //writing bitmaps to atlas
+    //writing bitmaps to atlas & setting encoding ranges
+    size_t rangeStartIndex = 0;
+    bool firstGlyph = true;
+    unsigned int rangeStartCodepoint = 0;
+    unsigned int prevCodepoint = 0;
+
+    //sorting by encoding
     std::sort(AtlasPacker.Rects.begin(), AtlasPacker.Rects.end(), [](Rect rect1, Rect rect2) { return get<0>(rect1.Data) < get<0>(rect2.Data); });
+
     for (Rect rect : AtlasPacker.Rects)
     {
-        ZeroAtlas(rect.X, rect.Y, rect.Width, rect.Height); //to avoid random garbage on edges of glyphs with non-zero offsets
+        unsigned int currentCodepoint = get<0>(rect.Data);
 
+        if (firstGlyph || currentCodepoint != prevCodepoint + 1)
+        {
+            if (firstGlyph)
+            {
+                firstGlyph = false;
+            }
+            else 
+            {
+                result.EncodingRanges.push_back({ rangeStartCodepoint, prevCodepoint, rangeStartIndex });
+            }
+
+            rangeStartCodepoint = currentCodepoint;
+            rangeStartIndex = Textures.size();
+        }
+
+        prevCodepoint = currentCodepoint;
+
+        ZeroAtlas(rect.X, rect.Y, rect.Width, rect.Height); //to avoid random garbage on edges of glyphs with non-zero offsets
         file.seekg(get<1>(rect.Data)); //going to the start of the bitmap
 
         unsigned char buffer[IMAGE_CHANNELS * 4]; //4 cause we're writing up to 4 pixels per hexadecimal digit
@@ -251,14 +280,12 @@ Ogl::TextureGroup Ogl::LoadBdfFont(std::filesystem::path path)
             }
         }
 
-        Textures.push_back({
-            .Path = path,
-            .Width = rect.Width,
-            .Height = rect.Height,
-            .AtlasX = rect.X,
-            .AtlasY = rect.Y,
-            .Index = Textures.size() });
+        AddTexture(path, rect);
     }
+
+    result.Path = path;
+    result.GlyphCount = AtlasPacker.Rects.size();
+    result.EncodingRanges.push_back({ rangeStartCodepoint, prevCodepoint, rangeStartIndex });
 
     file.close();
     AtlasPacker.Rects.clear();
@@ -268,7 +295,7 @@ Ogl::TextureGroup Ogl::LoadBdfFont(std::filesystem::path path)
 }
 
 //loads all the textures from the specified path (recursively)
-std::vector<Ogl::TextureData> Ogl::LoadTexturesFromPath(std::filesystem::path path)
+std::vector<Ogl::Texture> Ogl::LoadTexturesFromPath(std::filesystem::path path)
 {
     std::vector<std::filesystem::path> paths;
 
@@ -286,11 +313,11 @@ std::vector<Ogl::TextureData> Ogl::LoadTexturesFromPath(std::filesystem::path pa
 }
 
 //finds texture by path if it's already loaded/loads it if not
-Ogl::TextureData Ogl::ResolveTexture(std::filesystem::path path)
+Ogl::Texture Ogl::ResolveTexture(std::filesystem::path path)
 {
     if (std::filesystem::exists(path))
     {
-        for (TextureData& texture : Textures)
+        for (Texture& texture : Textures)
         {
             if (std::filesystem::equivalent(texture.Path, path))
                 return texture;
@@ -301,11 +328,11 @@ Ogl::TextureData Ogl::ResolveTexture(std::filesystem::path path)
 }
 
 //finds font by path if it's already loaded/loads it if not
-Ogl::TextureGroup Ogl::ResolveFont(std::filesystem::path path)
+Ogl::BitmapFont Ogl::ResolveFont(std::filesystem::path path)
 {
     if (std::filesystem::exists(path))
     {
-        for (TextureGroup& font : Fonts)
+        for (BitmapFont& font : Fonts)
         {
             if (std::filesystem::equivalent(font.Path, path))
                 return font;

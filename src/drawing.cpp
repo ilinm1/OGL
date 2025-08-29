@@ -1,9 +1,10 @@
+#include <codecvt>
 #include "ogl.hpp"
 
 //drawing methods
 
 //writes 'count' vertices to the buffer 'buf' of size 'size'
-void Ogl::Layer::WriteVertexData(const Vec2* coords, const Vec2* texCoords, TextureData texture, size_t count)
+void Ogl::Layer::WriteVertexData(const Vec2* coords, const Vec2* texCoords, Texture texture, size_t count)
 {
     if (RenderingDataSize - RenderingDataUsed < count * VERT_SIZE)
     {
@@ -35,7 +36,7 @@ void Ogl::Layer::WriteVertexData(const Vec2* coords, const Vec2* texCoords, Text
 
 //draws a triangle from three points in world/screen space (depending on layer's space) with the specified texture
 //if 'matchResolution' is set the texture will be matched to it's real resolution, otherwise stretched to fully fit the triangle
-void Ogl::Layer::DrawTriangle(Vec2 a, Vec2 b, Vec2 c, TextureData texture, bool matchResolution)
+void Ogl::Layer::DrawTriangle(Vec2 a, Vec2 b, Vec2 c, Texture texture, bool matchResolution)
 {
     const Vec2 coords[3] = { a, b, c };
 
@@ -46,12 +47,13 @@ void Ogl::Layer::DrawTriangle(Vec2 a, Vec2 b, Vec2 c, TextureData texture, bool 
     min.Y = std::min(std::min(a.Y, b.Y), c.Y);
     aabb = max - min;
 
+    TextureDimensions dimensions = Ogl::TextureDimensionsVector[texture.Index];
     Vec2 texSize = Vec2(1);
     if (matchResolution)
     {
         texSize = PointToPixels(aabb, IsWorldSpace);
-        texSize.X /= texture.Width;
-        texSize.Y /= texture.Height;
+        texSize.X /= dimensions.Width;
+        texSize.Y /= dimensions.Height;
     }
 
     const Vec2 texCoords[3] =
@@ -66,7 +68,7 @@ void Ogl::Layer::DrawTriangle(Vec2 a, Vec2 b, Vec2 c, TextureData texture, bool 
 
 //draws a rectangle from two points in world/screen space (depending on layer's space) with the specified texture
 //if 'matchResolution' is set the texture will be matched to it's real resolution, otherwise stretched to fully fit the rectangle
-void Ogl::Layer::DrawRect(Vec2 a, Vec2 b, TextureData texture, bool matchResolution)
+void Ogl::Layer::DrawRect(Vec2 a, Vec2 b, Texture texture, bool matchResolution)
 {
     const Vec2 coords[6] =
     {
@@ -78,12 +80,13 @@ void Ogl::Layer::DrawRect(Vec2 a, Vec2 b, TextureData texture, bool matchResolut
         a
     };
 
+    TextureDimensions dimensions = Ogl::TextureDimensionsVector[texture.Index];
     Vec2 texSize = Vec2(1);
     if (matchResolution)
     {
         texSize = PointToPixels((a - b).Abs(), IsWorldSpace);
-        texSize.X /= texture.Width;
-        texSize.Y /= texture.Height;
+        texSize.X /= dimensions.Width;
+        texSize.Y /= dimensions.Height;
     }
 
     const Vec2 texCoords[6] =
@@ -99,27 +102,40 @@ void Ogl::Layer::DrawRect(Vec2 a, Vec2 b, TextureData texture, bool matchResolut
     WriteVertexData(coords, texCoords, texture, 6);
 }
 
-//ascii only
+//expects a utf8 string
 //'scale' sets the amount of NDC/in-world meters per glyph pixel
 //if 'multiline' is set then new line will be created after reading newline
-void Ogl::Layer::DrawText(Vec2 pos, std::string text, float scale, TextureGroup font, bool multiline)
+void Ogl::Layer::DrawText(Vec2 pos, std::string text, float scale, BitmapFont& font, bool multiline)
 {
+    static std::wstring_convert<std::codecvt_utf8<unsigned int>, unsigned int> utf8converter;
+    std::basic_string<unsigned int> textUtf32 = utf8converter.from_bytes(text);
+
     int x = 0;
-    for (char character : text)
+    for (unsigned int codepoint : textUtf32)
     {
-        if (character == '\n')
+        if (codepoint == '\n')
         {
             pos.Y -= font.MaxHeight * scale;
             x = 0;
             continue;
         }
 
-        unsigned int characterIndex = character - 0x20;
-        characterIndex = characterIndex < 0 ? 0 : characterIndex;
-        characterIndex = characterIndex > font.Size - 1 ? 0 : characterIndex;
+        size_t index = -1;
+        for (auto& [startCodepoint, endCodepoint, startIndex] : font.EncodingRanges)
+        {
+            if (codepoint >= startCodepoint && codepoint <= endCodepoint)
+            {
+                index = startIndex + codepoint - startCodepoint;
+                break;
+            }
+        }
 
-        TextureData characterTexture = Textures[font.Index + characterIndex];
-        Vec2 characterSize = Vec2(characterTexture.Width, characterTexture.Height) * scale;
+        if (index == -1)
+            throw std::runtime_error("Character unsupported by font.");
+
+        Texture characterTexture = Textures[index];
+        TextureDimensions dimensions = Ogl::TextureDimensionsVector[characterTexture.Index];
+        Vec2 characterSize = Vec2(dimensions.Width, dimensions.Height) * scale;
 
         DrawRect(pos + Vec2(characterSize.X * x, 0), pos + Vec2(characterSize.X * (x + 1), characterSize.Y), characterTexture);
         x++;

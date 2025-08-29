@@ -38,21 +38,24 @@ void GLAPIENTRY GlMessageCallback(GLenum source, GLenum type, GLuint id, GLenum 
     std::string severityStr;
     switch(severity)
     {
-        case GL_DEBUG_SEVERITY_HIGH_ARB:
-            severityStr = "high";
+        case GL_DEBUG_SEVERITY_HIGH:
+            severityStr = "high severity";
             break;
-        case GL_DEBUG_SEVERITY_MEDIUM_ARB:
-            severityStr = "medium";
+        case GL_DEBUG_SEVERITY_MEDIUM:
+            severityStr = "medium severity";
             break;
-        case GL_DEBUG_SEVERITY_LOW_ARB:
-            severityStr = "low";
+        case GL_DEBUG_SEVERITY_LOW:
+            severityStr = "low severity";
+            break;
+        case GL_DEBUG_SEVERITY_NOTIFICATION:
+            severityStr = "notification";
             break;
         default:
             severityStr = "unknown";
             break;
     }
 
-    Ogl::Log(std::format("GL debug - {} severity: '{}'\n", severityStr, message));
+    Ogl::Log(std::format("GL debug - {}: '{}'\n", severityStr, message));
 }
 #endif
 
@@ -70,7 +73,7 @@ void GlfwKeyCallback(GLFWwindow* window, int key, int scancode, int action, int 
 
 void GlfwCharCallback(GLFWwindow* window, unsigned int codepoint)
 {
-    Ogl::Invoke<Ogl::CharacterEvent>({ .Utf32 = codepoint });
+    Ogl::Invoke<Ogl::CharacterEvent>({ .Codepoint = codepoint });
 }
 
 void GlfwMouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
@@ -84,78 +87,22 @@ void GlfwScrollCallback(GLFWwindow* window, double offsetX, double offsetY)
     Ogl::Invoke<Ogl::ScrollEvent>(ev);
 }
 
-//buffer operations
-
-//gets next free block of memory in the VBO
-std::tuple<size_t, size_t> GetFreeBlock()
-{
-    size_t offset, size;
-
-    if (Ogl::Layers.size() == 0)
-    {
-        offset = 0;
-        size = BUFFER_SIZE;
-    }
-    else
-    {
-        Ogl::Layer* layer = Ogl::Layers.back();
-        offset = layer->BlockOffset + layer->BlockSize;
-        size = BUFFER_SIZE - offset;
-    }
-
-    return { offset, size };
-}
-
-//changes size of the specified block in VBO
-//all of the following blocks are shifted
-void ResizeBlock(size_t offset, size_t size, size_t newSize)
-{
-    Ogl::VideoMemoryUsed += newSize - size;
-    if (Ogl::VideoMemoryUsed > BUFFER_SIZE)
-        throw std::runtime_error("Out of video memory.");
-
-    //copying everything after the block
-    //target buffer enums don't matter, 'GL_COPY_WRITE_BUFFER' is being used both for writing & reading
-    size_t copySize = Ogl::VideoMemoryUsed - offset - size;
-    glCopyBufferSubData(GL_ARRAY_BUFFER, GL_COPY_WRITE_BUFFER, offset + size, 0, copySize);
-    glCopyBufferSubData(GL_COPY_WRITE_BUFFER, GL_ARRAY_BUFFER, 0, offset + newSize, copySize);
-}
-
-//removes specified block from the VBO
-//all of the following blocks are shifted
-void RemoveBlock(size_t offset, size_t size)
-{
-    ResizeBlock(offset, size, 0);
-}
-
-//changes size of the memory block occupied by the layer + updates offsets of following blocks
-void SetLayerSize(Ogl::Layer* layer, size_t size)
-{
-    ResizeBlock(layer->BlockOffset, layer->BlockSize, size);
-    for (Ogl::Layer* ptr : Ogl::Layers)
-    {
-        if (ptr != layer && ptr->BlockOffset >= layer->BlockOffset)
-            ptr->BlockOffset += size - layer->BlockSize;
-    }
-    layer->BlockSize = size;
-}
-
 //layer methods
 
 void Ogl::AddLayer(Layer* layer)
 {
-    auto[offset, size] = GetFreeBlock();
-    layer->BlockOffset = offset;
+    layer->Index = Layers.size();
+    layer->BlockIndex = Vbo.AddBlock();
     Layers.push_back(layer);
 }
 
 void Ogl::RemoveLayer(Layer* layer)
 {
-    RemoveBlock(layer->BlockOffset, layer->BlockSize);
-    for (Layer* ptr : Layers)
+    Vbo.RemoveBlock(layer->BlockIndex);
+
+    for (int i = layer->Index; i < Layers.size(); i++)
     {
-        if (ptr->BlockOffset > layer->BlockOffset)
-            ptr->BlockOffset -= layer->BlockSize;
+        layer->BlockIndex--;
     }
 
     Layers.erase(std::find(Layers.begin(), Layers.end(), layer));
@@ -173,15 +120,15 @@ void Ogl::ClearLayers()
 //window methods
 
 //gets size of the window's framebuffer in pixels
-std::tuple<unsigned int, unsigned int> Ogl::GetWindowSize()
+std::tuple<int, int> Ogl::GetWindowSize()
 {
     int width, height;
     glfwGetFramebufferSize(Window, &width, &height);
-    return { static_cast<unsigned int>(width), static_cast<unsigned int>(height) };
+    return { width, height };
 }
 
 //sets size of the window's content area in screen coordinates, NOT pixels
-void Ogl::SetWindowSize(unsigned int width, unsigned int height)
+void Ogl::SetWindowSize(int width, int height)
 {
     glfwSetWindowSize(Window, width, height);
 }
@@ -205,7 +152,7 @@ void Ogl::Initialize(int windowWidth, int windowHeight, std::string windowName, 
     //!! window creation !!
 
     glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
@@ -248,16 +195,11 @@ void Ogl::Initialize(int windowWidth, int windowHeight, std::string windowName, 
     //VBO is vertex buffer object, it holds vertex data (each layer has it's own block of memory inside of it)
 
     glGenVertexArrays(1, &Vao);
-    glGenBuffers(1, &Vbo);
-    glGenBuffers(1, &VboCopy); //for moving data inside of the VBO, isn't used for drawing
-
     glBindVertexArray(Vao);
 
-    //allocating storage
-    glBindBuffer(GL_ARRAY_BUFFER, Vbo);
-    glBufferData(GL_ARRAY_BUFFER, BUFFER_SIZE, NULL, GL_DYNAMIC_DRAW);
-    glBindBuffer(GL_COPY_WRITE_BUFFER, VboCopy);
-    glBufferData(GL_COPY_WRITE_BUFFER, BUFFER_SIZE, NULL, GL_DYNAMIC_COPY);
+    VboCopy.Initialize(0, 0, BUFFER_SIZE, GL_DYNAMIC_COPY, GL_COPY_WRITE_BUFFER);
+    Vbo.Initialize(0, VboCopy.Name, BUFFER_SIZE, GL_DYNAMIC_DRAW, GL_ARRAY_BUFFER);
+    Ssbo.Initialize(0, 0, BUFFER_SIZE, GL_DYNAMIC_DRAW, GL_SHADER_STORAGE_BUFFER);
 
     //vertex attributes, interleaved
     //coords - 2 floats
@@ -317,7 +259,9 @@ void Ogl::Initialize(int windowWidth, int windowHeight, std::string windowName, 
     //shader uniform values
     UniformNdcMatrix = glGetUniformLocation(shaders, "NDCMatrix");
     UniformDrawingDepth = glGetUniformLocation(shaders, "DrawingDepth");
-    UniformTextureDataArray = glGetUniformLocation(shaders, "TextureDataArray");
+    
+    //binding ssbo
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, SSBO_BINDING, Ssbo.Name);
 
     //enale depth test
     glEnable(GL_DEPTH_TEST);
@@ -335,9 +279,9 @@ void Ogl::UpdateLoop()
     {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        for (int i = 0; i < Layers.size(); i++)
+        for (Layer* layer : Layers)
         {
-            Layer* layer = Layers[i];
+            BufferBlock& layerBlock = Vbo.Blocks[layer->BlockIndex];
             layer->RenderingDataUsed = 0;
             layer->Draw();
 
@@ -345,16 +289,16 @@ void Ogl::UpdateLoop()
             size_t dataSize = layer->RenderingDataUsed;
             if (dataSize > 0 || layer->Redraw)
             {
-                if (dataSize > layer->BlockSize)
+                if (dataSize > layerBlock.Size)
                 {
-                    Log(std::format("Layer no. {} has exceeded it's memory limit, expanding from {} to {} bytes.\n", i, layer->BlockSize, dataSize * 2));
-                    SetLayerSize(layer, dataSize * 2);
+                    Log(std::format("Layer no. {} has exceeded it's memory limit, expanding from {} to {} bytes.\n", layer->Index, layerBlock.Size, dataSize * 2));
+                    Vbo.ResizeBlock(layer->BlockIndex, layerBlock.Size * 2 + dataSize);
                 }
 
-                layer->BlockUsed = dataSize;
+                layerBlock.Used = dataSize;
 
                 if (dataSize > 0)
-                    glBufferSubData(GL_ARRAY_BUFFER, layer->BlockOffset, layer->BlockUsed, layer->RenderingData);
+                    glBufferSubData(GL_ARRAY_BUFFER, layerBlock.Offset, dataSize, layer->RenderingData);
 
                 layer->Redraw = false;
             }
@@ -371,7 +315,7 @@ void Ogl::UpdateLoop()
             }
 
             //draw call
-            glDrawArrays(GL_TRIANGLES, layer->BlockOffset / VERT_SIZE, layer->BlockUsed / VERT_SIZE);
+            glDrawArrays(GL_TRIANGLES, layerBlock.Offset / VERT_SIZE, layerBlock.Used / VERT_SIZE);
         }
 
         glfwSwapBuffers(Window);

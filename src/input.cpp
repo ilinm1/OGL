@@ -20,3 +20,11 @@ bool Ogl::IsMouseButtonPressed(int button)
 {
     return glfwGetMouseButton(Window, button) == GLFW_PRESS;
 }
+
+std::string Ogl::GetClipboardContents()
+{
+    const char* ptr = glfwGetClipboardString(NULL);
+    if (ptr == NULL)
+        return "";
+    return std::string(ptr);
+}
