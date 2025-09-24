@@ -8,10 +8,11 @@
 #include <GLFW/glfw3.h>
 #include "vec2.hpp"
 #include "mat3.hpp"
+#include "color.hpp"
 #include "rectangle_packer.hpp"
 
 #define IMAGE_CHANNELS 4 //rgba, just to avoid magic numbers
-#define VERT_SIZE (4 * sizeof(float) + sizeof(unsigned int))
+#define VERT_SIZE (4 * sizeof(float) + 2 * sizeof(unsigned int))
 #define BUFFER_SIZE (VERT_SIZE * 3 * 100000)
 
 #define IMAGE_EXTS { ".png", ".jpeg", ".bmp" }
@@ -187,7 +188,7 @@ namespace Ogl
     struct Texture
     {
         std::filesystem::path Path;
-        size_t Index = 0; //index in 'Textures' and 'TextureDimensionsVector'
+        size_t Index = 0; //index in 'Textures' and 'TextureDimensionsVector'; if index is zero then texture is invalid
     };
 
     struct BitmapFont
@@ -230,10 +231,10 @@ namespace Ogl
 
         //drawing methods
 
-        void WriteVertexData(const Vec2* coords, const Vec2* texCoords, Texture texture, size_t count);
-        void DrawTriangle(Vec2, Vec2 b, Vec2 c, Texture texture, bool matchResolution = false);
-        void DrawRect(Vec2 a, Vec2 b, Texture texture, bool matchResolution = false);
-        void DrawText(Vec2 pos, std::string text, float scale, BitmapFont& font, bool multiline = true);
+        void WriteVertexData(const Vec2* coords, const Vec2* texCoords, const Color* colors, Texture texture, size_t count);
+        void DrawTriangle(Vec2 a, Vec2 b, Vec2 c, Color color = COLOR_TRANSPARENT, Texture texture = Texture{}, bool matchResolution = false);
+        void DrawRect(Vec2 a, Vec2 b, Color color = COLOR_TRANSPARENT, Texture texture = Texture {}, bool matchResolution = false);
+        void DrawText(Vec2 pos, std::string text, float scale, BitmapFont& font, Color color = COLOR_TRANSPARENT, bool multiline = true);
     };
 
     void Log(std::string msg);
@@ -341,9 +342,9 @@ namespace Ogl
     inline RectanglePacker AtlasPacker;
     inline unsigned int AtlasWidth, AtlasHeight;
     inline unsigned char* AtlasData;
-    inline std::vector<Texture> Textures;
+    inline std::vector<Texture> Textures = { Texture {} }; //zero index is reserved as an invalid texture, so drawing commands will ignore it
     inline std::vector<BitmapFont> Fonts;
-    inline std::vector<TextureDimensions> TextureDimensionsVector; //texture positions and sizes relative to atlas, storing them separately from other texture data since it must be sent to the fragment shader
+    inline std::vector<TextureDimensions> TextureDimensionsVector = { TextureDimensions {} }; //texture positions and sizes relative to atlas, storing them separately from other texture data since it must be sent to the fragment shader
     inline std::vector<size_t> TexturesToUpdate; //indices of newly added/moved textures which require their data to be resent to the GPU
 
     //layers

@@ -315,8 +315,9 @@ Ogl::Texture Ogl::ResolveTexture(std::filesystem::path path)
 {
     if (std::filesystem::exists(path))
     {
-        for (Texture& texture : Textures)
+        for (int i = 1; i < Textures.size(); i++)
         {
+            Texture& texture = Textures[i];
             if (std::filesystem::equivalent(texture.Path, path))
                 return texture;
         }

@@ -108,4 +108,3 @@ struct Vec2
         return !(l == r);
     }
 };
-

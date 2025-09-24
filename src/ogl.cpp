@@ -210,9 +210,13 @@ void Ogl::Initialize(int windowWidth, int windowHeight, std::string windowName, 
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, VERT_SIZE, reinterpret_cast<void*>(2 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    //texture handle index - 1 uint
+    //texture index - 1 uint
     glVertexAttribIPointer(2, 1, GL_UNSIGNED_INT, VERT_SIZE, reinterpret_cast<void*>(4 * sizeof(float)));
     glEnableVertexAttribArray(2);
+
+    //modulate color - 1 uint
+    glVertexAttribIPointer(3, 1, GL_UNSIGNED_INT, VERT_SIZE, reinterpret_cast<void*>(4 * sizeof(float) + sizeof(unsigned int)));
+    glEnableVertexAttribArray(3);
 
     //!! shader compilation !!
 

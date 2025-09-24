@@ -4,7 +4,7 @@
 //drawing methods
 
 //writes 'count' vertices to the buffer 'buf' of size 'size'
-void Ogl::Layer::WriteVertexData(const Vec2* coords, const Vec2* texCoords, Texture texture, size_t count)
+void Ogl::Layer::WriteVertexData(const Vec2* coords, const Vec2* texCoords, const Color* colors, Texture texture, size_t count)
 {
     if (RenderingDataSize - RenderingDataUsed < count * VERT_SIZE)
     {
@@ -29,14 +29,18 @@ void Ogl::Layer::WriteVertexData(const Vec2* coords, const Vec2* texCoords, Text
 
         //texture index
         *reinterpret_cast<unsigned int*>(data + VERT_SIZE * i + 4 * sizeof(float)) = texture.Index;
+
+        //modulate color
+        *reinterpret_cast<unsigned int*>(data + VERT_SIZE * i + 4 * sizeof(float) + sizeof(unsigned int)) = colors[i].Uint;
     }
 
     RenderingDataUsed += count * VERT_SIZE;
 }
 
 //draws a triangle from three points in world/screen space (depending on layer's space) with the specified texture
+//'color' is modulate color (alpha can be set to zero to ignore it)
 //if 'matchResolution' is set the texture will be matched to it's real resolution, otherwise stretched to fully fit the triangle
-void Ogl::Layer::DrawTriangle(Vec2 a, Vec2 b, Vec2 c, Texture texture, bool matchResolution)
+void Ogl::Layer::DrawTriangle(Vec2 a, Vec2 b, Vec2 c, Color color, Texture texture, bool matchResolution)
 {
     const Vec2 coords[3] = { a, b, c };
 
@@ -63,12 +67,15 @@ void Ogl::Layer::DrawTriangle(Vec2 a, Vec2 b, Vec2 c, Texture texture, bool matc
         { (c.X - min.X) * texSize.X / aabb.X, (c.Y - min.Y) * texSize.Y / aabb.Y }
     };
 
-    WriteVertexData(coords, texCoords, texture, 3);
+    const Color colors[3] = { color, color, color };
+
+    WriteVertexData(coords, texCoords, colors, texture, 3);
 }
 
 //draws a rectangle from two points in world/screen space (depending on layer's space) with the specified texture
+//'color' is modulate color (alpha can be set to zero to ignore it)
 //if 'matchResolution' is set the texture will be matched to it's real resolution, otherwise stretched to fully fit the rectangle
-void Ogl::Layer::DrawRect(Vec2 a, Vec2 b, Texture texture, bool matchResolution)
+void Ogl::Layer::DrawRect(Vec2 a, Vec2 b, Color color, Texture texture, bool matchResolution)
 {
     const Vec2 coords[6] =
     {
@@ -99,13 +106,16 @@ void Ogl::Layer::DrawRect(Vec2 a, Vec2 b, Texture texture, bool matchResolution)
         {0,         0}
     };
 
-    WriteVertexData(coords, texCoords, texture, 6);
+    const Color colors[6] = { color, color, color, color, color, color };
+
+    WriteVertexData(coords, texCoords, colors, texture, 6);
 }
 
 //expects a utf8 string
 //'scale' sets the amount of NDC/in-world meters per glyph pixel
+//'color' is modulate color (alpha can be set to zero to ignore it)
 //if 'multiline' is set then new line will be created after reading newline
-void Ogl::Layer::DrawText(Vec2 pos, std::string text, float scale, BitmapFont& font, bool multiline)
+void Ogl::Layer::DrawText(Vec2 pos, std::string text, float scale, BitmapFont& font, Color color, bool multiline)
 {
     static std::wstring_convert<std::codecvt_utf8<unsigned int>, unsigned int> utf8converter;
     std::basic_string<unsigned int> textUtf32 = utf8converter.from_bytes(text);
@@ -137,7 +147,7 @@ void Ogl::Layer::DrawText(Vec2 pos, std::string text, float scale, BitmapFont& f
         TextureDimensions dimensions = Ogl::TextureDimensionsVector[characterTexture.Index];
         Vec2 characterSize = Vec2(dimensions.Width, dimensions.Height) * scale;
 
-        DrawRect(pos + Vec2(characterSize.X * x, 0), pos + Vec2(characterSize.X * (x + 1), characterSize.Y), characterTexture);
+        DrawRect(pos + Vec2(characterSize.X * x, 0), pos + Vec2(characterSize.X * (x + 1), characterSize.Y), color, characterTexture);
         x++;
     }
 }
