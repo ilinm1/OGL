@@ -343,8 +343,7 @@ namespace Ogl
     inline unsigned char* AtlasData;
     inline std::vector<Texture> Textures;
     inline std::vector<BitmapFont> Fonts;
-    inline std::vector<TextureDimensions> TextureDimensionsVector; //texture positions and sizes relative to atlas, 
-                                                                   //storing them separately from other texture data since it must be sent to the fragment shader
+    inline std::vector<TextureDimensions> TextureDimensionsVector; //texture positions and sizes relative to atlas, storing them separately from other texture data since it must be sent to the fragment shader
     inline std::vector<size_t> TexturesToUpdate; //indices of newly added/moved textures which require their data to be resent to the GPU
 
     //layers

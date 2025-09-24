@@ -10,6 +10,32 @@
 
 //texture methods
 
+Ogl::Texture AddTexture(std::filesystem::path path, Rect rect)
+{
+    Ogl::TextureDimensionsVector.push_back({ rect.X, rect.Y, rect.Width, rect.Height });
+    Ogl::TexturesToUpdate.push_back(Ogl::Textures.size());
+    Ogl::Textures.push_back({ path, Ogl::Textures.size() });
+    return Ogl::Textures.back();
+}
+
+void UpdateTextureData()
+{
+    size_t maxIndex = *std::max_element(Ogl::TexturesToUpdate.begin(), Ogl::TexturesToUpdate.end());
+    size_t requiredSsboSize = (maxIndex + 1) * sizeof(Ogl::TextureDimensions);
+    if (Ogl::Ssbo.Size < requiredSsboSize)
+        throw std::runtime_error("Out of video memory.");
+
+    for (size_t index : Ogl::TexturesToUpdate)
+    {
+        Ogl::TextureDimensions dimensions = Ogl::TextureDimensionsVector[index];
+        glBufferSubData(GL_SHADER_STORAGE_BUFFER, index * sizeof(Ogl::TextureDimensions), sizeof(Ogl::TextureDimensions), &dimensions);
+    }
+
+    Ogl::TexturesToUpdate.clear();
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, Ogl::AtlasWidth, Ogl::AtlasHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, Ogl::AtlasData);
+}
+
 void InitializeAtlas()
 {
     glGenTextures(1, &Ogl::Atlas);
@@ -24,8 +50,6 @@ void WriteToAtlas(unsigned char* data, unsigned int x, unsigned int y, unsigned 
 {
     if (x + width > Ogl::AtlasWidth || y + height > Ogl::AtlasHeight)
         throw std::runtime_error("Tried to write out of atlas bounds.");
-
-    y = Ogl::AtlasHeight - y - height;
 
     for (int i = 0; i < height; i++)
     {
@@ -71,32 +95,6 @@ void ResizeAtlas(unsigned int width, unsigned int height)
         WriteToAtlas(oldData, 0, 0, std::min(oldWidth, width), std::min(oldHeight, height), false);
         delete[] oldData;
     }
-}
-
-Ogl::Texture AddTexture(std::filesystem::path path, Rect rect)
-{
-    Ogl::TextureDimensionsVector.push_back({ rect.X, rect.Y, rect.Width, rect.Height });
-    Ogl::TexturesToUpdate.push_back(Ogl::Textures.size());
-    Ogl::Textures.push_back({ path, Ogl::Textures.size() });
-    return Ogl::Textures.back();
-}
-
-void UpdateTextureData()
-{
-    size_t maxIndex = *std::max_element(Ogl::TexturesToUpdate.begin(), Ogl::TexturesToUpdate.end());
-    size_t requiredSsboSize = (maxIndex + 1) * sizeof(Ogl::TextureDimensions);
-    if (Ogl::Ssbo.Size < requiredSsboSize)
-        throw std::runtime_error("Out of video memory.");
-
-    for (size_t index : Ogl::TexturesToUpdate)
-    {
-        Ogl::TextureDimensions dimensions = Ogl::TextureDimensionsVector[index];
-        glBufferSubData(GL_SHADER_STORAGE_BUFFER, index * sizeof(Ogl::TextureDimensions), sizeof(Ogl::TextureDimensions), &dimensions);
-    }
-
-    Ogl::TexturesToUpdate.clear();
-
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, Ogl::AtlasWidth, Ogl::AtlasHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, Ogl::AtlasData);
 }
 
 //loads textures from the specified paths, adding them to atlas
@@ -255,7 +253,7 @@ Ogl::BitmapFont Ogl::LoadBdfFont(std::filesystem::path path)
         int offsetX = get<2>(rect.Data);
         int offsetY = get<3>(rect.Data);
 
-        for (int y = 0; y < rect.Height - offsetY; y++)
+        for (int y = rect.Height - offsetY - 1; y > 0; y--)
         {
             std::getline(file, line);
 
@@ -276,7 +274,7 @@ Ogl::BitmapFont Ogl::LoadBdfFont(std::filesystem::path path)
                 }
 
                 if (pixels != 0)
-                    WriteToAtlas(buffer, rect.X + offsetX + x * 4, rect.Y + offsetY + y, pixels, 1);
+                    WriteToAtlas(buffer, rect.X + offsetX + x * 4, y, pixels, 1);
             }
         }
 
