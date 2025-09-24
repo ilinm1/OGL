@@ -19,7 +19,7 @@ struct TriangleLayer : Ogl::Layer
         if (!Redraw)
             return;
 
-        DrawTriangle(Vec2(-0.75f, -0.75f), Vec2(0.75f, -0.75f), Vec2(0.0f, 0.75f), Texture);
+        DrawTriangle(Vec2(-0.75f, -0.75f), Vec2(0.75f, -0.75f), Vec2(0.0f, 0.75f), COLOR_TRANSPARENT, Texture);
     }
 };
 
@@ -27,9 +27,15 @@ struct BallLayer : Ogl::Layer
 {
     Ogl::Texture Texture;
 
+    Color BallColor;
     Vec2 BallPos = Vec2(0.0f);
     Vec2 BallVelocity;
     float VelocityAngle;
+    float TotalTime = 0.0f;
+
+    Color GradientColor1 = Color(255, 0, 0, 128);
+    Color GradientColor2 = Color(0, 0, 255, 128);
+    const float GradientTime = 10.0f;
 
     const Vec2 BallSize = Vec2(0.5f);
     const float BallSpeed = 1.0f;
@@ -58,10 +64,26 @@ struct BallLayer : Ogl::Layer
         return v;
     }
 
+    Color GetGradientColor(float t)
+    {
+        t = fmod(t / GradientTime, 1.0f);
+
+        if (t <= TimeStep / GradientTime)
+        {
+            Color oldColor = GradientColor1;
+            GradientColor1 = GradientColor2;
+            GradientColor2 = oldColor;
+        }
+
+        return GradientColor1 * (1.0f - t) + GradientColor2 * t;
+    }
+
     void Draw() override
     {
-        DrawRect(BallPos, BallPos + BallSize, Texture);
+        TotalTime += TimeStep;
         BallPos += BallVelocity * TimeStep;
+        BallColor = GetGradientColor(TotalTime);
+        DrawRect(BallPos, BallPos + BallSize, BallColor, Texture);
 
         Vec2 bounds = Ogl::CameraSize / 2;
         if (BallPos.X + BallSize.X > bounds.X || BallPos.X < -bounds.X)
