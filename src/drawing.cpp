@@ -1,5 +1,5 @@
 #include <codecvt>
-#include "ogl.hpp"
+#include "../include/ogl.hpp"
 
 //drawing methods
 

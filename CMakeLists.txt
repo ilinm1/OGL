@@ -8,6 +8,7 @@ add_compile_definitions(DEBUG_OUTPUT)
 include_directories(lib/glfw/include lib/glad/include lib/stb src)
 add_library(ogl STATIC 
     src/ogl.cpp
+    src/buffer.cpp
     src/camera.cpp
     src/drawing.cpp
     src/input.cpp
