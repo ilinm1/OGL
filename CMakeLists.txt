@@ -21,3 +21,6 @@ target_link_libraries(test_ball ogl)
 
 add_executable(test_text tests/text.cpp)
 target_link_libraries(test_text ogl)
+
+add_executable(test_sierpinski tests/sierpinski.cpp)
+target_link_libraries(test_sierpinski ogl)

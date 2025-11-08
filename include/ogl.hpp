@@ -12,7 +12,7 @@
 
 #define IMAGE_CHANNELS 4 //rgba, just to avoid magic numbers
 #define VERT_SIZE (4 * sizeof(float) + 2 * sizeof(unsigned int))
-#define BUFFER_SIZE (VERT_SIZE * 3 * 100000)
+#define BUFFER_SIZE (VERT_SIZE * 3 * 1000000) //68.6 Mbs, up to a million triangles
 
 #define IMAGE_EXTS { ".png", ".jpeg", ".bmp" }
 
@@ -157,9 +157,10 @@ namespace Ogl
             RenderingDataSize = renderingDataSize;
         }
 
+        //each draw call generates new primitives to be drawn, replacing the old ones; if no new ones were generated the old ones will be drawn
         virtual void Draw() {}
 
-        virtual ~Layer() 
+        virtual ~Layer()
         {
             delete[] RenderingData;
         }
