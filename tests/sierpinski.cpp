@@ -25,19 +25,20 @@ struct SierpinskiLayer : Ogl::Layer
 
     void Draw() override
     {
-        if (Iter++ > MaxIter)
-        {
-            Iter = 1;
-            Size = 1.0f;
-            Triangles = { Vec2(-0.5f) };
-        }
-
         for (Vec2 triangle : Triangles)
         {
             DrawTriangle(triangle, Vec2(triangle.X + Size, triangle.Y), Vec2(triangle.X + Size / 2.0f, triangle.Y + Size * sqrtf(3) / 2.0f), GetColor());
         }
 
         Size /= 2.0f;
+
+        if (++Iter > MaxIter)
+        {
+            Iter = 1;
+            Size = 1.0f;
+            Triangles = { Vec2(-0.5f) };
+            return;
+        }
 
         std::vector<Vec2> newTriangles;
         for (Vec2 triangle : Triangles)
