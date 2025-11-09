@@ -1,6 +1,7 @@
 #include <chrono>
 #include <thread>
 #include "../include/ogl.hpp"
+#include <iostream>
 
 struct SierpinskiLayer : Ogl::Layer
 {
@@ -30,9 +31,9 @@ struct SierpinskiLayer : Ogl::Layer
             DrawTriangle(triangle, Vec2(triangle.X + Size, triangle.Y), Vec2(triangle.X + Size / 2.0f, triangle.Y + Size * sqrtf(3) / 2.0f), GetColor());
         }
 
-        Size /= 2.0f;
+        std::this_thread::sleep_for(std::chrono::milliseconds(DelayMs));
 
-        if (++Iter > MaxIter)
+        if (Iter++ == MaxIter)
         {
             Iter = 1;
             Size = 1.0f;
@@ -40,6 +41,7 @@ struct SierpinskiLayer : Ogl::Layer
             return;
         }
 
+        Size /= 2.0f;
         std::vector<Vec2> newTriangles;
         for (Vec2 triangle : Triangles)
         {
@@ -47,8 +49,6 @@ struct SierpinskiLayer : Ogl::Layer
             newTriangles.push_back(Vec2(triangle.X + Size / 2.0f, triangle.Y + Size * sqrtf(3) / 2.0f)); //upper triangle
         }
         Triangles.insert(Triangles.end(), newTriangles.begin(), newTriangles.end());
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(DelayMs));
     }
 };
 
