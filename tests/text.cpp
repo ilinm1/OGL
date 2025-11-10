@@ -1,10 +1,12 @@
 #include <codecvt>
 #include "../include/ogl.hpp"
 
+const float PixelsPerMeter = 50.0f; //can't define in class
+
 struct TextLayer : Ogl::Layer
 {
     Ogl::BitmapFont Font;
-    std::string Text = "Use arrows to move the camera.\nScroll to zoom in/out.\nYou can use enter, backspace and paste with ctrl + C.\n:)";
+    std::string Text = "Use arrows to move the camera.\nScroll to zoom in/out.\nYou can use enter, backspace and paste with ctrl + V.\n:)";
     std::wstring_convert<std::codecvt_utf8<unsigned int>, unsigned int> Utf32Converter;
 
     TextLayer() : Ogl::Layer()
@@ -14,6 +16,7 @@ struct TextLayer : Ogl::Layer
 
         Font = Ogl::ResolveFont("test.bdf");
 
+        Ogl::Subscribe<Ogl::WindowResizeEvent>(&OnWindowResize);
         Ogl::Subscribe<Ogl::KeyPressEvent>(&OnKeyPress, this);
         Ogl::Subscribe<Ogl::CharacterEvent>(&OnCharacterReceived, this);
         Ogl::Subscribe<Ogl::ScrollEvent>(&OnScroll);
@@ -21,9 +24,14 @@ struct TextLayer : Ogl::Layer
 
     ~TextLayer()
     {
-        Ogl::Subscribe<Ogl::KeyPressEvent>(&OnKeyPress, this);
+        Ogl::Unsubscribe<Ogl::KeyPressEvent>(&OnKeyPress, this);
         Ogl::Unsubscribe<Ogl::CharacterEvent>(&OnCharacterReceived, this);
         Ogl::Unsubscribe<Ogl::ScrollEvent>(&OnScroll);
+    }
+
+    static void OnWindowResize(Ogl::WindowResizeEvent ev, void* data)
+    {
+        Ogl::SetCameraSize(Vec2(ev.Width, ev.Height) / PixelsPerMeter);
     }
 
     static void OnKeyPress(Ogl::KeyPressEvent ev, void* data)
@@ -63,7 +71,7 @@ struct TextLayer : Ogl::Layer
         layer.Redraw = true;
     }
 
-    static void OnScroll(Ogl::ScrollEvent ev, void* layer)
+    static void OnScroll(Ogl::ScrollEvent ev, void* data)
     {
         Ogl::SetCameraScale(Ogl::CameraScale + ev.OffsetY * 0.05f);
     }
@@ -83,14 +91,14 @@ struct TextLayer : Ogl::Layer
             Ogl::SetCameraPosition(Ogl::CameraPosition + Vec2(0.05f, 0.0f));
 
         if (Redraw)
-            DrawText(Vec2(-7.5f, 7.0f), Text, 0.01f, Font);
+            DrawText(Vec2(0.0f), Text, 0.01f, Font);
     }
 };
 
 int main()
 {
     Ogl::Initialize(500, 500, "Text", false);
-    Ogl::SetCameraSize(Vec2(15.0f));
+    Ogl::SetCameraSize(Vec2(500.0f) / PixelsPerMeter);
 
     TextLayer textLayer = {};
     Ogl::AddLayer(&textLayer);
