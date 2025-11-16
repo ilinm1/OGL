@@ -1,7 +1,7 @@
 #include <chrono>
 #include <thread>
-#include "../include/ogl.hpp"
 #include <iostream>
+#include <ogl.hpp>
 
 struct SierpinskiLayer : Ogl::Layer
 {

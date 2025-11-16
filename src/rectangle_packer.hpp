@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vector>
-#include "vec2.hpp"
+#include <vec2.hpp>
 
 struct Rect
 {

@@ -1,4 +1,4 @@
-#include "../include/ogl.hpp"
+#include <ogl.hpp>
 
 //camera methods
 

@@ -1,6 +1,6 @@
 #include <format>
 #include <random>
-#include "../include/ogl.hpp"
+#include <ogl.hpp>
 
 #define PI 3.1415
 

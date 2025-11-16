@@ -14,9 +14,9 @@
 #include <stb_image.h>
 #include <stb_image_write.h>
 
-#include "mat3.hpp"
-#include "shaders.hpp"
-#include "../include/ogl.hpp"
+#include <mat3.hpp>
+#include <shaders.hpp>
+#include <ogl.hpp>
 
 void Ogl::Log(std::string msg)
 {

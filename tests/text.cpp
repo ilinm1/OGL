@@ -1,5 +1,5 @@
 #include <codecvt>
-#include "../include/ogl.hpp"
+#include <ogl.hpp>
 
 const float PixelsPerMeter = 50.0f; //can't define in class
 

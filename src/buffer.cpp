@@ -1,4 +1,4 @@
-#include "../include/ogl.hpp"
+#include <ogl.hpp>
 
 //not doing all of this in constructor since glad must be initialized beforehand
 void Ogl::Buffer::Initialize(

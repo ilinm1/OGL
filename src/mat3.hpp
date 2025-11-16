@@ -1,6 +1,6 @@
 #pragma once
 
-#include "vec2.hpp"
+#include <vec2.hpp>
 
 //3x3 matrix
 struct Mat3

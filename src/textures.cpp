@@ -5,8 +5,8 @@
 #include <glad/glad.h>
 #include <stb_image.h>
 #include <stb_image_write.h>
-#include "../include/ogl.hpp"
-#include "rectangle_packer.hpp"
+#include <ogl.hpp>
+#include <rectangle_packer.hpp>
 
 //texture methods
 
