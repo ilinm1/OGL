@@ -143,7 +143,8 @@ namespace Ogl
         size_t BlockIndex; //index of the block of video memory owned by this layer
         size_t Index = 0;
 
-        unsigned int DrawingDepth = DEPTH_MIN;
+        unsigned int PrimitiveType = GL_TRIANGLES; //most drawing methods use GL_TRIANGLES, each layer can only use one primitive per draw call
+        unsigned int DrawingDepth = DEPTH_MIN; //layer with higher depth will be drawn on top of layers with lower depth
         bool IsWorldSpace = false;
         bool Redraw = false; //if set data from the previous 'Draw' call will be discarded even if nothing was generated during the last call; will be reset afterwards
 

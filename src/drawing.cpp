@@ -4,6 +4,7 @@
 //drawing methods
 
 //writes 'count' vertices to the buffer 'buf' of size 'size'
+//null can be passed to 'texCoords' and 'colors' parameters to omit them
 void Ogl::Layer::WriteVertexData(const Vec2* coords, const Vec2* texCoords, const Color* colors, Texture texture, size_t count)
 {
     if (RenderingDataSize - RenderingDataUsed < count * VERT_SIZE)
@@ -24,14 +25,14 @@ void Ogl::Layer::WriteVertexData(const Vec2* coords, const Vec2* texCoords, cons
         *reinterpret_cast<float*>(data + VERT_SIZE * i + 1 * sizeof(float)) = coords[i].Y;
 
         //texture coordinates - xy
-        *reinterpret_cast<float*>(data + VERT_SIZE * i + 2 * sizeof(float)) = texCoords[i].X;
-        *reinterpret_cast<float*>(data + VERT_SIZE * i + 3 * sizeof(float)) = texCoords[i].Y;
+        *reinterpret_cast<float*>(data + VERT_SIZE * i + 2 * sizeof(float)) = texCoords == NULL ? 0 : texCoords[i].X;
+        *reinterpret_cast<float*>(data + VERT_SIZE * i + 3 * sizeof(float)) = texCoords == NULL ? 0 : texCoords[i].Y;
 
         //texture index
         *reinterpret_cast<unsigned int*>(data + VERT_SIZE * i + 4 * sizeof(float)) = texture.Index;
 
         //modulate color
-        *reinterpret_cast<unsigned int*>(data + VERT_SIZE * i + 4 * sizeof(float) + sizeof(unsigned int)) = colors[i].Uint;
+        *reinterpret_cast<unsigned int*>(data + VERT_SIZE * i + 4 * sizeof(float) + sizeof(unsigned int)) = colors == NULL ? 0 : colors[i].Uint;
     }
 
     RenderingDataUsed += count * VERT_SIZE;

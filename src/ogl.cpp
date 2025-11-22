@@ -91,6 +91,8 @@ void GlfwScrollCallback(GLFWwindow* window, double offsetX, double offsetY)
 
 void Ogl::AddLayer(Layer* layer)
 {
+    Log(std::format("Adding layer no. {}.\n", layer->Index));
+
     layer->Index = Layers.size();
     layer->BlockIndex = Vbo.AddBlock();
     Layers.push_back(layer);
@@ -98,14 +100,14 @@ void Ogl::AddLayer(Layer* layer)
 
 void Ogl::RemoveLayer(Layer* layer)
 {
-    Vbo.RemoveBlock(layer->BlockIndex);
+    Log(std::format("Removing layer no. {}.\n", layer->Index));
 
+    Vbo.RemoveBlock(layer->BlockIndex);
     for (int i = layer->Index; i < Layers.size(); i++)
     {
         layer->BlockIndex--;
     }
-
-    Layers.erase(std::find(Layers.begin(), Layers.end(), layer));
+    Layers.erase(Layers.begin() + layer->Index);
     delete layer;
 }
 
@@ -319,7 +321,7 @@ void Ogl::UpdateLoop()
             }
 
             //draw call
-            glDrawArrays(GL_TRIANGLES, layerBlock.Offset / VERT_SIZE, layerBlock.Used / VERT_SIZE);
+            glDrawArrays(layer->PrimitiveType, layerBlock.Offset / VERT_SIZE, layerBlock.Used / VERT_SIZE);
         }
 
         glfwSwapBuffers(Window);
