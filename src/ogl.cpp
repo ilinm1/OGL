@@ -119,6 +119,20 @@ void Ogl::ClearLayers()
     }
 }
 
+bool Ogl::IsLayerOutOfView(Layer* layer)
+{
+    if (layer->IsWorldSpace)
+    {
+        Vec2 cameraMax = CameraPosition + CameraSize * CameraScale;
+        Vec2 cameraMin = CameraPosition - CameraSize * CameraScale;
+        return (layer->AabbMax.X < cameraMin.X || layer->AabbMax.Y < cameraMin.Y) || (layer->AabbMin.X > cameraMax.X || layer->AabbMin.Y > cameraMax.Y);
+    }
+    else
+    {
+        return (layer->AabbMax.X < -1 || layer->AabbMax.Y < -1) || (layer->AabbMin.X > 1 || layer->AabbMin.Y > 1);
+    }
+}
+
 //window methods
 
 //gets size of the window's framebuffer in pixels
@@ -290,6 +304,12 @@ void Ogl::UpdateLoop()
             BufferBlock& layerBlock = Vbo.Blocks[layer->BlockIndex];
             layer->RenderingDataUsed = 0;
             layer->Draw();
+
+            if (ClippingEnabled && IsLayerOutOfView(layer))
+            {
+                Log(std::format("Layer no. {} is out of view and won't be drawn.\n", layer->Index));
+                continue;
+            }
 
             //substituting buffer's data by layer's newly generated one
             size_t dataSize = layer->RenderingDataUsed;

@@ -145,8 +145,11 @@ namespace Ogl
 
         unsigned int PrimitiveType = GL_TRIANGLES; //most drawing methods use GL_TRIANGLES, each layer can only use one primitive per draw call
         unsigned int DrawingDepth = DEPTH_MIN; //layer with higher depth will be drawn on top of layers with lower depth
-        bool IsWorldSpace = false;
+        bool IsWorldSpace = false; //if set objects drawn by the layer will be transformed to NDC from world coordinates by the vertex shader
         bool Redraw = false; //if set data from the previous 'Draw' call will be discarded even if nothing was generated during the last call; will be reset afterwards
+        
+        Vec2 AabbMax = Vec2(0); //AABB of objects drawn by the layer, used for clipping (if enabled), WILL NOT BE SET WHEN USING 'WriteVertexData' DIRECTLY
+        Vec2 AabbMin = Vec2(0);
 
         size_t RenderingDataSize = 0;
         size_t RenderingDataUsed = 0;
@@ -245,6 +248,7 @@ namespace Ogl
     void AddLayer(Layer* layer);
     void RemoveLayer(Layer* layer);
     void ClearLayers();
+    bool IsLayerOutOfView(Layer* layer);
 
     //init, update
 
@@ -269,6 +273,7 @@ namespace Ogl
     inline Vec2 CameraSize = Vec2(1);
     inline float CameraRotation;
     inline float CameraScale = 1;
+    inline bool ClippingEnabled = true; //if enabled, layers which are out of camera's view will not be drawn
 
     //coordinate transformation matrices
     inline Mat3 WorldToNDCMatrix;

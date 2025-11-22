@@ -45,12 +45,9 @@ void Ogl::Layer::DrawTriangle(Vec2 a, Vec2 b, Vec2 c, Color color, Texture textu
 {
     const Vec2 coords[3] = { a, b, c };
 
-    Vec2 max, min, aabb;
-    max.X = std::max(std::max(a.X, b.X), c.X);
-    max.Y = std::max(std::max(a.Y, b.Y), c.Y);
-    min.X = std::min(std::min(a.X, b.X), c.X);
-    min.Y = std::min(std::min(a.Y, b.Y), c.Y);
-    aabb = max - min;
+    Vec2 max = Vec2::Max(Vec2::Max(a, b), c);
+    Vec2 min = Vec2::Min(Vec2::Min(a, b), c);
+    Vec2 aabb = max - min;
 
     TextureDimensions dimensions = Ogl::TextureDimensionsVector[texture.Index];
     Vec2 texSize = Vec2(1);
@@ -71,6 +68,8 @@ void Ogl::Layer::DrawTriangle(Vec2 a, Vec2 b, Vec2 c, Color color, Texture textu
     const Color colors[3] = { color, color, color };
 
     WriteVertexData(coords, texCoords, colors, texture, 3);
+    AabbMax = Vec2::Max(AabbMax, max);
+    AabbMin = Vec2::Min(AabbMin, min);
 }
 
 //draws a rectangle from two points in world/screen space (depending on layer's space) with the specified texture
@@ -110,6 +109,8 @@ void Ogl::Layer::DrawRect(Vec2 a, Vec2 b, Color color, Texture texture, bool mat
     const Color colors[6] = { color, color, color, color, color, color };
 
     WriteVertexData(coords, texCoords, colors, texture, 6);
+    AabbMax = Vec2::Max(AabbMax, Vec2::Max(a, b));
+    AabbMin = Vec2::Min(AabbMin, Vec2::Min(a, b));
 }
 
 //expects a utf8 string
@@ -121,13 +122,13 @@ void Ogl::Layer::DrawText(Vec2 pos, std::string text, float scale, BitmapFont& f
     static std::wstring_convert<std::codecvt_utf8<unsigned int>, unsigned int> utf8converter;
     std::basic_string<unsigned int> textUtf32 = utf8converter.from_bytes(text);
 
-    int x = 0;
+    Vec2 currentPos = pos;
     for (unsigned int codepoint : textUtf32)
     {
         if (codepoint == '\n')
         {
-            pos.Y -= font.MaxHeight * scale;
-            x = 0;
+            currentPos.X = pos.X;
+            currentPos.Y -= font.MaxHeight * scale;
             continue;
         }
 
@@ -148,7 +149,11 @@ void Ogl::Layer::DrawText(Vec2 pos, std::string text, float scale, BitmapFont& f
         TextureDimensions dimensions = Ogl::TextureDimensionsVector[characterTexture.Index];
         Vec2 characterSize = Vec2(dimensions.Width, dimensions.Height) * scale;
 
-        DrawRect(pos + Vec2(characterSize.X * x, 0), pos + Vec2(characterSize.X * (x + 1), characterSize.Y), color, characterTexture);
-        x++;
+        DrawRect(currentPos, currentPos + Vec2(characterSize.X, characterSize.Y), color, characterTexture);
+        currentPos.X += characterSize.X;
     }
+
+    Vec2 topLeft = Vec2(pos.X, pos.Y - font.MaxHeight * scale);
+    AabbMax = Vec2::Max(AabbMax, Vec2::Max(topLeft, currentPos));
+    AabbMin = Vec2::Min(AabbMin, Vec2::Min(topLeft, currentPos));
 }

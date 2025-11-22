@@ -19,6 +19,18 @@ struct Vec2
         X = x; Y = y;
     }
 
+    //returns vector with maximal component values of both input vectors
+    static Vec2 Max(Vec2 a, Vec2 b)
+    {
+        return Vec2(std::max(a.X, b.X), std::max(a.Y, b.Y));
+    }
+
+    //returns vector with minimal component values of both input vectors
+    static Vec2 Min(Vec2 a, Vec2 b)
+    {
+        return Vec2(std::min(a.X, b.X), std::min(a.Y, b.Y));
+    }
+
     //in radians
     static Vec2 FromAngle(float angle)
     {
