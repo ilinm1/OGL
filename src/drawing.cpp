@@ -74,8 +74,10 @@ void Ogl::Layer::DrawTriangle(Vec2 a, Vec2 b, Vec2 c, Color color, Texture textu
 
 //draws a rectangle from two points in world/screen space (depending on layer's space) with the specified texture
 //'color' is modulate color (alpha can be set to zero to ignore it)
-//if 'matchResolution' is set the texture will be matched to it's real resolution, otherwise stretched to fully fit the rectangle
-void Ogl::Layer::DrawRect(Vec2 a, Vec2 b, Color color, Texture texture, bool matchResolution)
+//if 'matchResolution' is set then the texture will be matched to it's real resolution, otherwise stretched to fully fit the rectangle
+//if 'mirrorX'/'mirrorY' is set then the texture will be mirrored
+//if 'swapXY' is set then the texture will be drawn as if it's rotated by 90 degrees counter-clockwise
+void Ogl::Layer::DrawRect(Vec2 a, Vec2 b, Color color, Texture texture, bool matchResolution, bool mirrorX, bool mirrorY, bool swapXY)
 {
     const Vec2 coords[6] =
     {
@@ -96,24 +98,49 @@ void Ogl::Layer::DrawRect(Vec2 a, Vec2 b, Color color, Texture texture, bool mat
         texSize.Y /= dimensions.Height;
     }
 
+    Vec2 texLb = Vec2(0);
+    Vec2 texRt = texSize;
+
+    if (mirrorX)
+    {
+        texLb.X = texRt.X;
+        texRt.X = 0;
+    }
+
+    if (mirrorY)
+    {
+        texLb.Y = texRt.Y;
+        texRt.Y = 0;
+    }
+
     const Vec2 texCoords[6] =
     {
-        {0,         0},         //first triangle
-        {0,         texSize.Y},
-        {texSize.X, texSize.Y},
-        {texSize.X, texSize.Y}, //second triangle
-        {texSize.X, 0},
-        {0,         0}
+        texLb,
+        {texLb.X, texRt.Y},
+        texRt,
+        texRt,
+        {texRt.X, texLb.Y},
+        texLb
+    };
+
+    const Vec2 texCoordsSwapped[6] =
+    {
+        {texLb.X, texRt.Y},
+        texRt,
+        {texRt.X, texLb.Y},
+        {texRt.X, texLb.Y},
+        texLb,
+        {texLb.X, texRt.Y},
     };
 
     const Color colors[6] = { color, color, color, color, color, color };
 
-    WriteVertexData(coords, texCoords, colors, texture, 6);
+    WriteVertexData(coords, swapXY ? texCoordsSwapped : texCoords, colors, texture, 6);
     AabbMax = Vec2::Max(AabbMax, Vec2::Max(a, b));
     AabbMin = Vec2::Min(AabbMin, Vec2::Min(a, b));
 }
 
-//expects a utf8 string
+//expects an utf8 string
 //'scale' sets the amount of NDC/in-world meters per glyph pixel
 //'color' is modulate color (alpha can be set to zero to ignore it)
 //if 'multiline' is set then new line will be created after reading newline

@@ -37,6 +37,11 @@ struct Vec2
         return Vec2(cosf(angle), sinf(angle));
     }
 
+    Vec2 Rotated(float angle)
+    {
+        return Vec2(X * cosf(angle) - Y * sinf(angle), Y * cosf(angle) - X * sinf(angle));
+    }
+
     float Length()
     {
         return sqrtf(X * X + Y * Y);
