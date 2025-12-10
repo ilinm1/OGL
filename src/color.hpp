@@ -20,6 +20,11 @@ struct Color
         Rgba[3] = a;
     }
 
+    Color WithAlpha(unsigned char a) const
+    {
+        return Color(Rgba[0], Rgba[1], Rgba[2], a);
+    }
+
     Color& operator+=(const Color& r)
     {
         Rgba[0] = std::min(static_cast<int>(Rgba[0]) + r.Rgba[0], 255); //avoiding overflows
