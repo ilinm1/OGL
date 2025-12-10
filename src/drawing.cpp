@@ -184,3 +184,12 @@ void Ogl::Layer::DrawText(Vec2 pos, std::string text, float scale, BitmapFont& f
     AabbMax = Vec2::Max(AabbMax, Vec2::Max(topLeft, currentPos));
     AabbMin = Vec2::Min(AabbMin, Vec2::Min(topLeft, currentPos));
 }
+
+//FOR LAYERS USING "GL_LINES" PRIMITIVE
+void Ogl::Layer::DrawLine(Vec2 a, Vec2 b, Color color)
+{
+    const Vec2 coords[2] = { a, b };
+    const Color colors[2] = { color, color };
+
+    WriteVertexData(coords, NULL, colors, {}, 2);
+}
