@@ -307,9 +307,15 @@ void Ogl::UpdateLoop()
 
             if (ClippingEnabled && IsLayerOutOfView(layer))
             {
-                Log(std::format("Layer no. {} is out of view and won't be drawn.\n", layer->Index));
+                if (!layer->IsOutOfView)
+                {
+                    Log(std::format("Layer no. {} is out of view and won't be drawn.\n", layer->Index));
+                    layer->IsOutOfView = true;
+                }
+
                 continue;
             }
+            layer->IsOutOfView = false;
 
             //substituting buffer's data by layer's newly generated one
             size_t dataSize = layer->RenderingDataUsed;

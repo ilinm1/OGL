@@ -147,7 +147,8 @@ namespace Ogl
         unsigned int DrawingDepth = DEPTH_MIN; //layer with higher depth will be drawn on top of layers with lower depth
         bool IsWorldSpace = false; //if set objects drawn by the layer will be transformed to NDC from world coordinates by the vertex shader
         bool Redraw = false; //if set data from the previous 'Draw' call will be discarded even if nothing was generated during the last call; will be reset afterwards
-        
+        bool IsOutOfView = false; //if set layer is currently out of view and won't be drawn
+
         Vec2 AabbMax = Vec2(0); //AABB of objects drawn by the layer, used for clipping (if enabled), WILL NOT BE SET WHEN USING 'WriteVertexData' DIRECTLY
         Vec2 AabbMin = Vec2(0);
 
