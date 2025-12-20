@@ -175,7 +175,7 @@ namespace Ogl
         void WriteVertexData(const Vec2* coords, const Vec2* texCoords, const Color* colors, Texture texture, size_t count);
         void DrawTriangle(Vec2 a, Vec2 b, Vec2 c, Color color = COLOR_TRANSPARENT, Texture texture = Texture{}, bool matchResolution = false);
         void DrawRect(Vec2 a, Vec2 b, Color color = COLOR_TRANSPARENT, Texture texture = Texture {}, bool matchResolution = false, bool mirrorX = false, bool mirrorY = false, bool swapXY = false);
-        void DrawText(Vec2 pos, std::string text, float scale, BitmapFont& font, Color color = COLOR_TRANSPARENT, bool multiline = true);
+        void DrawText(Vec2 pos, std::string text, float scale, BitmapFont& font, Color color = COLOR_TRANSPARENT, bool multiline = true, bool bounded = false, float maxWidth = 0.0f, float maxHeight = 0.0f);
         void DrawLine(Vec2 a, Vec2 b, Color color);
     };
 

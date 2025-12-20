@@ -144,21 +144,23 @@ void Ogl::Layer::DrawRect(Vec2 a, Vec2 b, Color color, Texture texture, bool mat
 //'scale' sets the amount of NDC/in-world meters per glyph pixel
 //'color' is modulate color (alpha can be set to zero to ignore it)
 //if 'multiline' is set then new line will be created after reading newline
-void Ogl::Layer::DrawText(Vec2 pos, std::string text, float scale, BitmapFont& font, Color color, bool multiline)
+//if 'bounded' is set then text area will be limited by the 'maxWidth' & 'maxHeight' parameters (in NDC/in-world meters)
+void Ogl::Layer::DrawText(Vec2 pos, std::string text, float scale, BitmapFont& font, Color color, bool multiline, bool bounded, float maxWidth, float maxHeight)
 {
     static std::wstring_convert<std::codecvt_utf8<unsigned int>, unsigned int> utf8converter;
     std::basic_string<unsigned int> textUtf32 = utf8converter.from_bytes(text);
-
+    float lineHeight = font.MaxHeight * scale;
     Vec2 currentPos = pos;
+
     for (unsigned int codepoint : textUtf32)
     {
         if (codepoint == '\n')
         {
             currentPos.X = pos.X;
-            currentPos.Y -= font.MaxHeight * scale;
+            currentPos.Y -= lineHeight;
             continue;
         }
-
+        
         size_t index = -1;
         for (auto& [startCodepoint, endCodepoint, startIndex] : font.EncodingRanges)
         {
@@ -175,9 +177,23 @@ void Ogl::Layer::DrawText(Vec2 pos, std::string text, float scale, BitmapFont& f
         Texture characterTexture = Textures[index];
         TextureDimensions dimensions = Ogl::TextureDimensionsVector[characterTexture.Index];
         Vec2 characterSize = Vec2(dimensions.Width, dimensions.Height) * scale;
+        Vec2 upperRightPoint = currentPos + characterSize;
 
-        DrawRect(currentPos, currentPos + Vec2(characterSize.X, characterSize.Y), color, characterTexture);
-        currentPos.X += characterSize.X;
+        if (bounded)
+        {
+            if (upperRightPoint.X > pos.X + maxWidth)
+            {
+                currentPos.X = pos.X;
+                currentPos.Y -= lineHeight;
+                upperRightPoint = currentPos + characterSize;
+            }
+
+            if (currentPos.Y < pos.Y - maxHeight)
+                break;
+        }
+
+        DrawRect(currentPos, upperRightPoint, color, characterTexture);
+        currentPos.X = upperRightPoint.X;
     }
 
     Vec2 topLeft = Vec2(pos.X, pos.Y - font.MaxHeight * scale);
