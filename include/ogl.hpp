@@ -2,7 +2,8 @@
 
 #include <string>
 #include <filesystem>
-#include <unordered_set>
+#include <set>
+#include <functional>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include "vec2.hpp"
@@ -54,17 +55,23 @@ namespace Ogl
     //input events
 
     template <class T>
-    using EventHandler = void(*)(T, void*);
+    using EventHandler = void(*)(T, void*, bool&); //event, data, whether event has been handled
 
     template <class T>
     struct Subscription
     {
         EventHandler<T> Handler;
+        int Priority; //handlers with higher priority will be called first
         void* Data;
 
         friend bool operator==(const Subscription<T>& l, const Subscription<T>& r)
         {
             return l.Handler == r.Handler && l.Data == r.Data;
+        }
+
+        bool operator>(const Subscription<T>& x) const
+        {
+            return Priority > x.Priority;
         }
     };
 
@@ -76,6 +83,9 @@ namespace Ogl
             return ((std::hash<void*>()(sub.Handler) ^ (std::hash<void*>()(sub.Data) << 1)) >> 1);
         }
     };
+
+    template <class T>
+    using SubscriptionSet = std::set<Subscription<T>, std::greater<Subscription<T>>>;
 
     struct WindowResizeEvent
     {
@@ -156,6 +166,8 @@ namespace Ogl
         size_t RenderingDataUsed = 0;
         char* RenderingData = NULL;
 
+        std::vector<std::function<void()>> UnsubHandlers; //lambdas wrapped in 'std::function' which will be called upon layer's destruction to unsubscribe it from any events
+
         Layer(size_t renderingDataSize = 256)
         {
             RenderingData = new char[renderingDataSize];
@@ -167,6 +179,10 @@ namespace Ogl
 
         virtual ~Layer()
         {
+            for (std::function<void()> handler : UnsubHandlers)
+            {
+                handler();
+            }
             delete[] RenderingData;
         }
 
@@ -199,30 +215,40 @@ namespace Ogl
     //and templates must be defined in headers it's easier to just put them here
 
     template <class T>
-    std::unordered_set<Subscription<T>>& GetSubscriptions()
+    SubscriptionSet<T>& GetSubscriptions()
     {
-        static std::unordered_set<Subscription<T>> subs;
+        static SubscriptionSet<T> subs;
         return subs;
     }
 
     template <class T>
-    void Subscribe(EventHandler<T> handler, void* data = NULL)
+    void Unsubscribe(const Subscription<T>& sub)
     {
-        GetSubscriptions<T>().insert({ handler, data });
+        GetSubscriptions<T>().erase(sub);
     }
 
+    //subscribes 'handler' to the event T
+    //if 'layer' is set an unsubscription handler will be created and called automatically upon layer's destruction, otherwise 'Unsubscribe' should be called manually
+    //if 'data' is not null it will be passed to the handler, otherwise 'layer' will be passed instead
+    //handlers with higher 'priority' will get called first
     template <class T>
-    void Unsubscribe(EventHandler<T> handler, void* data = NULL)
+    const Subscription<T>& Subscribe(EventHandler<T> handler, Ogl::Layer* layer = NULL, void* data = NULL, int priority = 0)
     {
-        GetSubscriptions<T>().erase({ handler, data });
+        const Subscription<T>& sub = *(GetSubscriptions<T>().insert({ handler, priority, data ? data : layer }).first);
+        if (layer)
+            layer->UnsubHandlers.push_back(std::function<void()>([sub]() { Ogl::Unsubscribe(sub); }));
+        return sub;
     }
 
     template <class T>
     void Invoke(T event)
     {
+        bool handled = false;
         for (Subscription sub : GetSubscriptions<T>())
         {
-            sub.Handler(event, sub.Data);
+            sub.Handler(event, sub.Data, handled);
+            if (handled)
+                return;
         }
     }
 

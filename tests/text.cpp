@@ -16,25 +16,18 @@ struct TextLayer : Ogl::Layer
 
         Font = Ogl::ResolveFont("test.bdf");
 
-        Ogl::Subscribe<Ogl::WindowResizeEvent>(&OnWindowResize);
+        Ogl::Subscribe<Ogl::WindowResizeEvent>(&OnWindowResize, this);
         Ogl::Subscribe<Ogl::KeyPressEvent>(&OnKeyPress, this);
         Ogl::Subscribe<Ogl::CharacterEvent>(&OnCharacterReceived, this);
-        Ogl::Subscribe<Ogl::ScrollEvent>(&OnScroll);
+        Ogl::Subscribe<Ogl::ScrollEvent>(&OnScroll, this);
     }
 
-    ~TextLayer()
-    {
-        Ogl::Unsubscribe<Ogl::KeyPressEvent>(&OnKeyPress, this);
-        Ogl::Unsubscribe<Ogl::CharacterEvent>(&OnCharacterReceived, this);
-        Ogl::Unsubscribe<Ogl::ScrollEvent>(&OnScroll);
-    }
-
-    static void OnWindowResize(Ogl::WindowResizeEvent ev, void* data)
+    static void OnWindowResize(Ogl::WindowResizeEvent ev, void* data, bool& handled)
     {
         Ogl::SetCameraSize(Vec2(ev.Width, ev.Height) / PixelsPerMeter);
     }
 
-    static void OnKeyPress(Ogl::KeyPressEvent ev, void* data)
+    static void OnKeyPress(Ogl::KeyPressEvent ev, void* data, bool& handled)
     {
         if (ev.Action == GLFW_RELEASE)
             return;
@@ -61,7 +54,7 @@ struct TextLayer : Ogl::Layer
         }
     }
 
-    static void OnCharacterReceived(Ogl::CharacterEvent ev, void* data)
+    static void OnCharacterReceived(Ogl::CharacterEvent ev, void* data, bool& handled)
     {
         TextLayer& layer = *reinterpret_cast<TextLayer*>(data);
 
@@ -71,7 +64,7 @@ struct TextLayer : Ogl::Layer
         layer.Redraw = true;
     }
 
-    static void OnScroll(Ogl::ScrollEvent ev, void* data)
+    static void OnScroll(Ogl::ScrollEvent ev, void* data, bool& handled)
     {
         Ogl::SetCameraScale(Ogl::CameraScale + ev.OffsetY * 0.05f);
     }
