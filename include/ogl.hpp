@@ -210,6 +210,7 @@ namespace Ogl
     bool IsKeyPressed(int key);
     bool IsMouseButtonPressed(int button);
     std::string GetClipboardContents();
+    bool OpenFilePicker(std::string title, bool write, std::filesystem::path& path);
 
     //input event method implementations - since they depend on types from this header
     //and templates must be defined in headers it's easier to just put them here
