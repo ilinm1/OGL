@@ -299,14 +299,16 @@ namespace Ogl
 
     //camera data
     inline Vec2 CameraPosition; //camera's center
-    inline Vec2 CameraSize = Vec2(1);
+    inline Vec2 CameraSize = Vec2(1); //two times the distance from the camera's center to it's x/y boundary
     inline float CameraRotation;
     inline float CameraScale = 1;
     inline bool ClippingEnabled = true; //if enabled, layers which are out of camera's view will not be drawn
 
     //coordinate transformation matrices
     inline Mat3 WorldToNDCMatrix;
+    inline Mat3 NDCToWorldMatrix;
     inline Mat3 NDCToPixelMatrix;
+    inline Mat3 PixelToNDCMatrix;
 
     //texture data
     inline unsigned int Atlas; //opengl texture id

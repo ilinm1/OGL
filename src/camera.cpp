@@ -7,19 +7,24 @@ void Ogl::UpdateWorldToNDCMatrix()
 {
     float x = CameraPosition.X;
     float y = CameraPosition.Y;
-    float w = CameraSize.X * CameraScale;
-    float h = CameraSize.Y * CameraScale;
+    float w = CameraSize.X * CameraScale / 2.0f;
+    float h = CameraSize.Y * CameraScale / 2.0f;
     float c = cosf(CameraRotation);
     float s = sinf(CameraRotation);
 
     WorldToNDCMatrix =
     {
-        2 * c / w, -2 * s / h, -2 * x * c / w + 2 * y * s / h,
-        2 * s / w, 2 * c / h, -2 * x * s / w - 2 * y * c / h,
+        c / w, -s / w, (y * s - x * c) / w,
+        s / h, c / h, (-y * c - x * s) / h,
         0, 0, 0
     };
 
-    WorldToNDCMatrix = WorldToNDCMatrix.AsColumnMajor();
+    NDCToWorldMatrix =
+    {
+        w * c, -h * s, x * c - y * s,
+        w * s, h * c, x * s + y * c,
+        0, 0, 0
+    };
 }
 
 //updates matrix which translates normalized device coordinates to pixels, should be called after changing window size
@@ -30,12 +35,17 @@ void Ogl::UpdateNDCToPixelMatrix(unsigned int width, unsigned int height)
 
     NDCToPixelMatrix =
     {
-        w, 0, 0,
-        0, h, 0,
+        w, 0, w,
+        0, -h, h,
         0, 0, 0
     };
 
-    NDCToPixelMatrix = NDCToPixelMatrix.AsColumnMajor();
+    PixelToNDCMatrix =
+    {
+        1/w, 0, -1,
+        0, -1/h, 1,
+        0, 0, 0
+    };
 }
 
 //in in-world meters
@@ -77,8 +87,8 @@ Vec2 Ogl::PointToPixels(Vec2 point, bool inWorld)
 //converts point in pixels to NDC/in-world meters
 Vec2 Ogl::PointFromPixels(Vec2 point, bool inWorld)
 {
-    point = NDCToPixelMatrix.Inverse().TransformVector(point);
+    point = PixelToNDCMatrix.TransformVector(point);
     if (inWorld)
-        point = WorldToNDCMatrix.Inverse().TransformVector(point);
+        point = NDCToWorldMatrix.TransformVector(point);
     return point;
 }

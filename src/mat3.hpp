@@ -16,17 +16,6 @@ struct Mat3
         };
     }
 
-    Mat3 Inverse()
-    {
-        float det = 1 / (Cells[0] * Cells[4] - Cells[1] * Cells[3]);
-        return Mat3
-        {
-            det * Cells[4], -det * Cells[1], -Cells[2],
-            -det * Cells[3], det * Cells[0], -Cells[5],
-            0, 0, 0
-        };
-    }
-
     //elements in glsl matrices are stored contiguosly in columns (as opposed to rows)
     Mat3 AsColumnMajor()
     {

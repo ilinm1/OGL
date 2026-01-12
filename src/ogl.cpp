@@ -339,11 +339,11 @@ void Ogl::UpdateLoop()
             glUniform1f(UniformDrawingDepth, static_cast<float>(layer->DrawingDepth) / DEPTH_MAX);
             if (layer->IsWorldSpace)
             {
-                glUniformMatrix3fv(UniformNdcMatrix, 1, GL_FALSE, WorldToNDCMatrix.Cells);
+                glUniformMatrix3fv(UniformNdcMatrix, 1, GL_TRUE, WorldToNDCMatrix.Cells);
             }
             else
             {
-                glUniformMatrix3fv(UniformNdcMatrix, 1, GL_FALSE, IDENTITY_MATRIX.Cells);
+                glUniformMatrix3fv(UniformNdcMatrix, 1, GL_TRUE, IDENTITY_MATRIX.Cells);
             }
 
             //draw call

@@ -24,7 +24,7 @@ const static char* VertexShaderSource =
     "   float modulateB = (ModulateColorIn >> 16 & 0xFF) / 255.0f;\n"
     "   float modulateA = (ModulateColorIn >> 24 & 0xFF) / 255.0f;\n"
     "   ModulateColor = vec4(modulateR, modulateG, modulateB, modulateA);\n"
-    "   vec3 ndc = NDCMatrix * vec3(Coords.xy, 1.0f);\n"
+    "   vec3 ndc = NDCMatrix * vec3(Coords, 1.0f);\n"
     "   gl_Position = vec4(ndc.xy, 0.0f, 1.0f);\n"
     "}\n";
 
