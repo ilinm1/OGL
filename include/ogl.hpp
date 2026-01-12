@@ -266,6 +266,7 @@ namespace Ogl
 
     //texture methods
 
+    void SetTextureFilter(unsigned int minification, unsigned int magnification);
     std::vector<Texture> LoadTextures(std::vector<std::filesystem::path> paths);
     BitmapFont LoadBdfFont(std::filesystem::path path);
     std::vector<Texture> LoadTexturesFromPath(std::filesystem::path path);

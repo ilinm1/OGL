@@ -10,6 +10,13 @@
 
 //texture methods
 
+//'GL_NEAREST' - no filtering, 'GL_LINEAR' - linear interpolation
+void Ogl::SetTextureFilter(unsigned int minification, unsigned int magnification)
+{
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minification);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magnification);
+}
+
 Ogl::Texture AddTexture(std::filesystem::path path, Rect rect)
 {
     Ogl::TextureDimensionsVector.push_back({ rect.X, rect.Y, rect.Width, rect.Height });
@@ -40,8 +47,7 @@ void InitializeAtlas()
 {
     glGenTextures(1, &Ogl::Atlas);
     glBindTexture(GL_TEXTURE_2D, Ogl::Atlas);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    Ogl::SetTextureFilter(GL_NEAREST, GL_NEAREST);
 }
 
 //data pointing to the top-left pixel of the image, x & y specifying the left-bottom corner of the image area
