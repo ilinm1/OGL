@@ -263,6 +263,8 @@ namespace Ogl
     void SetCameraScale(float zoom);
     Vec2 PointToPixels(Vec2 point, bool inWorld);
     Vec2 PointFromPixels(Vec2 point, bool inWorld);
+    Vec2 SizeToPixels(Vec2 size, bool inWorld);
+    Vec2 SizeFromPixels(Vec2 size, bool inWorld);
 
     //texture methods
 

@@ -53,7 +53,7 @@ void Ogl::Layer::DrawTriangle(Vec2 a, Vec2 b, Vec2 c, Color color, Texture textu
     Vec2 texSize = Vec2(1);
     if (matchResolution)
     {
-        texSize = PointToPixels(aabb, IsWorldSpace);
+        texSize = SizeToPixels(aabb, IsWorldSpace);
         texSize.X /= dimensions.Width;
         texSize.Y /= dimensions.Height;
     }
@@ -93,7 +93,7 @@ void Ogl::Layer::DrawRect(Vec2 a, Vec2 b, Color color, Texture texture, bool mat
     Vec2 texSize = Vec2(1);
     if (matchResolution)
     {
-        texSize = PointToPixels((a - b).Abs(), IsWorldSpace);
+        texSize = SizeToPixels((a - b).Abs(), IsWorldSpace);
         texSize.X /= dimensions.Width;
         texSize.Y /= dimensions.Height;
     }
