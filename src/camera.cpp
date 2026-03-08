@@ -97,22 +97,22 @@ Vec2 Ogl::PointFromPixels(Vec2 point, bool inWorld)
 //only converting the actual dimensions of the object
 Vec2 Ogl::SizeToPixels(Vec2 size, bool inWorld)
 {
+    if (inWorld)
+        size = Vec2(size.X / Ogl::CameraSize.X, size.Y / Ogl::CameraSize.Y);
+
     auto [width, height] = Ogl::GetWindowSize();
-    size = size.Rotated(Ogl::CameraRotation);
-    size += Ogl::CameraPosition;
-    size = Ogl::PointToPixels(size, inWorld);
-    size.X -= width / 2;
-    size.Y = height / 2 - size.Y;
-    return size.Abs();
+    return Vec2(size.X * width, size.Y * height);
 }
 
 //unlike 'PointFromPixels' doesn't account for camera's position, rotation, different coordinate centers, etc. 
 //only converting the actual dimensions of the object
 Vec2 Ogl::SizeFromPixels(Vec2 size, bool inWorld)
 {
-    size = Ogl::PointFromPixels(size, inWorld);
-    size += Vec2(Ogl::CameraSize.X, -Ogl::CameraSize.Y) / 2;
-    size -= Ogl::CameraPosition;
-    size = size.Rotated(-Ogl::CameraRotation);
-    return size.Abs();
+    auto [width, height] = Ogl::GetWindowSize();
+    size = Vec2(size.X / width, size.Y / height);
+
+    if (inWorld)
+        size = Vec2(size.X * Ogl::CameraSize.X, size.Y * Ogl::CameraSize.Y);
+
+    return size;
 }
