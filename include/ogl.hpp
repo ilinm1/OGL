@@ -119,6 +119,45 @@ namespace Ogl
         double OffsetY;
     };
 
+    //event sub/unsub methods
+
+    template <class T>
+    SubscriptionSet<T>& GetSubscriptions()
+    {
+        static SubscriptionSet<T> subs;
+        return subs;
+    }
+
+    //subscribes 'handler' to the event T
+    //if 'layer' is set an unsubscription handler will be created and called automatically upon layer's destruction, otherwise 'Unsubscribe' should be called manually
+    //if 'data' is not null it will be passed to the handler, otherwise 'layer' will be passed instead
+    //handlers with higher 'priority' will get called first
+    template <class T>
+    const Subscription<T>& Subscribe(EventHandler<T> handler, void* data = NULL, int priority = 0)
+    {
+        const Subscription<T>& sub = *(GetSubscriptions<T>().insert({ handler, priority, data }).first);
+        return sub;
+    }
+
+    template <class T>
+    void Unsubscribe(const Subscription<T>& sub)
+    {
+        GetSubscriptions<T>().erase(sub);
+    }
+
+    //invokes event T, calling handlers with higher priority first
+    template <class T>
+    void Invoke(T event)
+    {
+        bool handled = false;
+        for (Subscription sub : GetSubscriptions<T>())
+        {
+            sub.Handler(event, sub.Data, handled);
+            if (handled)
+                return;
+        }
+    }
+
     //texture data
 
     //relative to atlas
@@ -186,7 +225,14 @@ namespace Ogl
             delete[] RenderingData;
         }
 
-        //drawing methods
+        //identical to the other 'Subscribe' method but passes layer to the handler and automatically adds an unsub callback 
+        //which will be called on layer's destruction
+        template <class T>
+        void Subscribe(EventHandler<T> handler, int priority = 0)
+        {
+            Subscription<T> sub = Ogl::Subscribe(handler, this, priority);
+            UnsubHandlers.push_back(std::function<void()>([sub]() { Ogl::Unsubscribe(sub); }));
+        }
 
         void WriteVertexData(const Vec2* coords, const Vec2* texCoords, const Color* colors, Texture texture, size_t count);
         void DrawTriangle(Vec2 a, Vec2 b, Vec2 c, Color color = COLOR_TRANSPARENT, Texture texture = Texture{}, bool matchResolution = false);
@@ -211,47 +257,6 @@ namespace Ogl
     bool IsMouseButtonPressed(int button);
     std::string GetClipboardContents();
     bool OpenFilePicker(std::string title, bool write, std::filesystem::path& path);
-
-    //input event method implementations - since they depend on types from this header
-    //and templates must be defined in headers it's easier to just put them here
-
-    template <class T>
-    SubscriptionSet<T>& GetSubscriptions()
-    {
-        static SubscriptionSet<T> subs;
-        return subs;
-    }
-
-    template <class T>
-    void Unsubscribe(const Subscription<T>& sub)
-    {
-        GetSubscriptions<T>().erase(sub);
-    }
-
-    //subscribes 'handler' to the event T
-    //if 'layer' is set an unsubscription handler will be created and called automatically upon layer's destruction, otherwise 'Unsubscribe' should be called manually
-    //if 'data' is not null it will be passed to the handler, otherwise 'layer' will be passed instead
-    //handlers with higher 'priority' will get called first
-    template <class T>
-    const Subscription<T>& Subscribe(EventHandler<T> handler, Ogl::Layer* layer = NULL, void* data = NULL, int priority = 0)
-    {
-        const Subscription<T>& sub = *(GetSubscriptions<T>().insert({ handler, priority, data ? data : layer }).first);
-        if (layer)
-            layer->UnsubHandlers.push_back(std::function<void()>([sub]() { Ogl::Unsubscribe(sub); }));
-        return sub;
-    }
-
-    template <class T>
-    void Invoke(T event)
-    {
-        bool handled = false;
-        for (Subscription sub : GetSubscriptions<T>())
-        {
-            sub.Handler(event, sub.Data, handled);
-            if (handled)
-                return;
-        }
-    }
 
     //camera methods
 

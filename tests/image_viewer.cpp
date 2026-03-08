@@ -6,7 +6,7 @@ struct ImageViewerLayer : Ogl::Layer
 
     ImageViewerLayer() : Ogl::Layer()
     {
-        Ogl::Subscribe<Ogl::KeyPressEvent>(&OnKeyPress, this);
+        Subscribe<Ogl::KeyPressEvent>(&OnKeyPress);
     }
 
     static void OnKeyPress(Ogl::KeyPressEvent ev, void* data, bool& handled)

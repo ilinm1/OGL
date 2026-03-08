@@ -143,7 +143,7 @@ std::tuple<int, int> Ogl::GetWindowSize()
     return { width, height };
 }
 
-//sets size of the window's content area in screen coordinates, NOT pixels
+//sets size of the window's content area in screen coordinates (not pixels but pretty close)
 void Ogl::SetWindowSize(int width, int height)
 {
     glfwSetWindowSize(Window, width, height);

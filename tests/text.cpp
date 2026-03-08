@@ -16,10 +16,10 @@ struct TextLayer : Ogl::Layer
 
         Font = Ogl::ResolveFont("test.bdf");
 
-        Ogl::Subscribe<Ogl::WindowResizeEvent>(&OnWindowResize, this);
-        Ogl::Subscribe<Ogl::KeyPressEvent>(&OnKeyPress, this);
-        Ogl::Subscribe<Ogl::CharacterEvent>(&OnCharacterReceived, this);
-        Ogl::Subscribe<Ogl::ScrollEvent>(&OnScroll, this);
+        Subscribe<Ogl::WindowResizeEvent>(&OnWindowResize);
+        Subscribe<Ogl::KeyPressEvent>(&OnKeyPress);
+        Subscribe<Ogl::CharacterEvent>(&OnCharacterReceived);
+        Subscribe<Ogl::ScrollEvent>(&OnScroll);
     }
 
     static void OnWindowResize(Ogl::WindowResizeEvent ev, void* data, bool& handled)
