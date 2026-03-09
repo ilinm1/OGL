@@ -98,7 +98,7 @@ Vec2 Ogl::PointFromPixels(Vec2 point, bool inWorld)
 Vec2 Ogl::SizeToPixels(Vec2 size, bool inWorld)
 {
     if (inWorld)
-        size = Vec2(size.X / Ogl::CameraSize.X, size.Y / Ogl::CameraSize.Y);
+        size = Vec2(size.X / Ogl::CameraSize.X / Ogl::CameraScale, size.Y / Ogl::CameraSize.Y / Ogl::CameraScale);
 
     auto [width, height] = Ogl::GetWindowSize();
     return Vec2(size.X * width, size.Y * height);
@@ -112,7 +112,7 @@ Vec2 Ogl::SizeFromPixels(Vec2 size, bool inWorld)
     size = Vec2(size.X / width, size.Y / height);
 
     if (inWorld)
-        size = Vec2(size.X * Ogl::CameraSize.X, size.Y * Ogl::CameraSize.Y);
+        size = Vec2(size.X * Ogl::CameraSize.X * Ogl::CameraScale, size.Y * Ogl::CameraSize.Y * Ogl::CameraScale);
 
     return size;
 }
