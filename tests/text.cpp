@@ -84,7 +84,7 @@ struct TextLayer : Ogl::Layer
             Ogl::SetCameraPosition(Ogl::CameraPosition + Vec2(0.05f, 0.0f));
 
         if (Redraw)
-            DrawText(Vec2(0.0f), Text, 0.01f, Font);
+            DrawText(Vec2(0.0f), Text, 1.0f, Font);
     }
 };
 

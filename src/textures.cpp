@@ -272,7 +272,7 @@ Ogl::BitmapFont Ogl::LoadBdfFont(std::filesystem::path path)
                 unsigned char value = character < '9' ? character - '0' : character - 'A' + 10; //hexadecimal digit to 4 bit value
 
                 int pixels = rect.Width - offsetX - x * 4;
-                pixels = std::max(std::min(pixels, 4), 0);
+                pixels = std::max(std::min(pixels, 4), 0); //how much pixels we have to actually write
 
                 for (int i = 0; i < pixels; i++)
                 {
