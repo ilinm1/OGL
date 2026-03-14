@@ -89,26 +89,44 @@ void GlfwScrollCallback(GLFWwindow* window, double offsetX, double offsetY)
 
 //layer methods
 
-void Ogl::AddLayer(Layer* layer)
+bool CompareLayersByHeight(Ogl::Layer*& a, Ogl::Layer*& b)
 {
-    Log(std::format("Adding layer no. {}.\n", layer->Index));
-
-    layer->Index = Layers.size();
-    layer->BlockIndex = Vbo.AddBlock();
-    Layers.push_back(layer);
+    return a->DrawingHeight < b->DrawingHeight;
 }
 
-void Ogl::RemoveLayer(Layer* layer)
+void SortLayersByHeight()
 {
-    Log(std::format("Removing layer no. {}.\n", layer->Index));
+    std::sort(Ogl::Layers.begin(), Ogl::Layers.end(), CompareLayersByHeight);
+}
 
-    Vbo.RemoveBlock(layer->BlockIndex);
-    for (int i = layer->Index; i < Layers.size(); i++)
+void Ogl::SetLayerHeight(Layer* layerPtr, unsigned int height)
+{
+    layerPtr->DrawingHeight = height;
+    SortLayersByHeight();
+}
+
+void Ogl::AddLayer(Layer* layerPtr)
+{
+    layerPtr->Id = Ogl::LastLayerId++;
+    layerPtr->BlockIndex = Vbo.AddBlock();
+    Layers.push_back(layerPtr);
+    SortLayersByHeight();
+    Log(std::format("Added layer no. {}.\n", layerPtr->Id));
+}
+
+void Ogl::RemoveLayer(Layer* layerPtr)
+{
+    Log(std::format("Removing layer no. {}.\n", layerPtr->Id));
+
+    Vbo.RemoveBlock(layerPtr->BlockIndex);
+    for (Layer* layer : Layers)
     {
-        layer->BlockIndex--;
+        if (layer->BlockIndex > layerPtr->BlockIndex)
+            layer->BlockIndex--;
     }
-    Layers.erase(Layers.begin() + layer->Index);
-    delete layer;
+
+    Layers.erase(std::find(Layers.begin(), Layers.end(), layerPtr));
+    delete layerPtr;
 }
 
 void Ogl::ClearLayers()
@@ -119,17 +137,17 @@ void Ogl::ClearLayers()
     }
 }
 
-bool Ogl::IsLayerOutOfView(Layer* layer)
+bool Ogl::IsLayerOutOfView(Layer* layerPtr)
 {
-    if (layer->IsWorldSpace)
+    if (layerPtr->IsWorldSpace)
     {
         Vec2 cameraMax = CameraPosition + CameraSize * CameraScale;
         Vec2 cameraMin = CameraPosition - CameraSize * CameraScale;
-        return (layer->AabbMax.X < cameraMin.X || layer->AabbMax.Y < cameraMin.Y) || (layer->AabbMin.X > cameraMax.X || layer->AabbMin.Y > cameraMax.Y);
+        return (layerPtr->AabbMax.X < cameraMin.X || layerPtr->AabbMax.Y < cameraMin.Y) || (layerPtr->AabbMin.X > cameraMax.X || layerPtr->AabbMin.Y > cameraMax.Y);
     }
     else
     {
-        return (layer->AabbMax.X < -1 || layer->AabbMax.Y < -1) || (layer->AabbMin.X > 1 || layer->AabbMin.Y > 1);
+        return (layerPtr->AabbMax.X < -1 || layerPtr->AabbMax.Y < -1) || (layerPtr->AabbMin.X > 1 || layerPtr->AabbMin.Y > 1);
     }
 }
 
@@ -278,15 +296,9 @@ void Ogl::Initialize(int windowWidth, int windowHeight, std::string windowName, 
 
     //shader uniform values
     UniformNdcMatrix = glGetUniformLocation(shaders, "NDCMatrix");
-    UniformDrawingDepth = glGetUniformLocation(shaders, "DrawingDepth");
     
     //binding ssbo
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, SSBO_BINDING, Ssbo.Name);
-
-    //enale depth test
-    glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_GEQUAL);
-    glClearDepth(0);
 
     //enable blending
     glEnable(GL_BLEND);
@@ -297,7 +309,7 @@ void Ogl::UpdateLoop()
 {
     while (!glfwWindowShouldClose(Window)) 
     {
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT);
 
         for (Layer* layer : Layers)
         {
@@ -309,7 +321,7 @@ void Ogl::UpdateLoop()
             {
                 if (!layer->IsOutOfView)
                 {
-                    Log(std::format("Layer no. {} is out of view and won't be drawn.\n", layer->Index));
+                    Log(std::format("Layer no. {} is out of view and won't be drawn.\n", layer->Id));
                     layer->IsOutOfView = true;
                 }
 
@@ -323,7 +335,7 @@ void Ogl::UpdateLoop()
             {
                 if (dataSize > layerBlock.Size)
                 {
-                    Log(std::format("Layer no. {} has exceeded it's memory limit, expanding from {} to {} bytes.\n", layer->Index, layerBlock.Size, dataSize * 2));
+                    Log(std::format("Layer no. {} has exceeded it's memory limit, expanding from {} to {} bytes.\n", layer->Id, layerBlock.Size, dataSize * 2));
                     Vbo.ResizeBlock(layer->BlockIndex, layerBlock.Size * 2 + dataSize);
                 }
 
@@ -335,8 +347,7 @@ void Ogl::UpdateLoop()
                 layer->Redraw = false;
             }
 
-            //setting depth and transform matrix
-            glUniform1f(UniformDrawingDepth, static_cast<float>(layer->DrawingDepth) / DEPTH_MAX);
+            //setting transform matrix
             if (layer->IsWorldSpace)
             {
                 glUniformMatrix3fv(UniformNdcMatrix, 1, GL_TRUE, WorldToNDCMatrix.Cells);

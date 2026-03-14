@@ -43,7 +43,7 @@ struct BallLayer : Ogl::Layer
     
     BallLayer() : Ogl::Layer()
     {
-        DrawingDepth = DEPTH_MAX;
+        DrawingHeight = HEIGHT_MAX;
         IsWorldSpace = true;
 
         Texture = Ogl::ResolveTexture("test.png");

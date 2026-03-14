@@ -17,10 +17,8 @@
 
 #define IMAGE_EXTS { ".png", ".jpeg", ".bmp" }
 
-//real depth is a float, equal to layer's depth divided by this value
-//that's the maximal value for 16 bit depth buffer, though 24 and 32 bit buffers may support even more different depths
-#define DEPTH_MAX 65535
-#define DEPTH_MIN 0
+#define HEIGHT_MAX 0xFFFFFFFF
+#define HEIGHT_MIN 0
 
 #define SSBO_BINDING 1
 
@@ -185,15 +183,14 @@ namespace Ogl
         std::vector<std::tuple<unsigned int, unsigned int, size_t>> EncodingRanges; //first utf32 codepoint, second codepoint, first glyph index
     };
 
-    //rendering layer, each layer owns a block of video memory which it can edit in order to draw stuff (i.e. background, menu, terrain, objects, etc.)
-    //drawing order is random but drawing depth allows to specify which layers should be on top of others (higher depth layers are drawn ontop of lower ones)
+    //rendering layer, each layer owns a block of video memory
     struct Layer
     {
         size_t BlockIndex; //index of the block of video memory owned by this layer
-        size_t Index = 0;
+        size_t Id; //mostly for logging purpouses, never repeat
 
         unsigned int PrimitiveType = GL_TRIANGLES; //most drawing methods use GL_TRIANGLES, each layer can only use one primitive per draw call
-        unsigned int DrawingDepth = DEPTH_MIN; //layer with higher depth will be drawn on top of layers with lower depth
+        unsigned int DrawingHeight = HEIGHT_MIN; //DO NOT SET DIRECTLY, USE 'SetLayerHeight'. layers with higher height will be drawn before layers with lower height (on top of em)
         bool IsWorldSpace = false; //if set objects drawn by the layer will be transformed to NDC from world coordinates by the vertex shader
         bool Redraw = false; //if set data from the previous 'Draw' call will be discarded even if nothing was generated during the last call; will be reset afterwards
         bool IsOutOfView = false; //if set layer is currently out of view and won't be drawn
@@ -282,10 +279,11 @@ namespace Ogl
 
     //layer methods
 
-    void AddLayer(Layer* layer);
-    void RemoveLayer(Layer* layer);
+    void AddLayer(Layer* layerPtr);
+    void RemoveLayer(Layer* layerPtr);
+    void SetLayerHeight(Layer* layerPtr, unsigned int height);
     void ClearLayers();
-    bool IsLayerOutOfView(Layer* layer);
+    bool IsLayerOutOfView(Layer* layerPtr);
 
     //init, update
 
@@ -303,7 +301,7 @@ namespace Ogl
     inline Buffer Vbo, VboCopy, Ssbo;
 
     //shader uniform handles
-    inline unsigned int UniformNdcMatrix, UniformDrawingDepth;
+    inline unsigned int UniformNdcMatrix;
 
     //camera data
     inline Vec2 CameraPosition; //camera's center
@@ -329,5 +327,6 @@ namespace Ogl
     inline std::vector<size_t> TexturesToUpdate; //indices of newly added/moved textures which require their data to be resent to the GPU
 
     //layers
+    inline size_t LastLayerId = 0;
     inline std::vector<Layer*> Layers;
 }

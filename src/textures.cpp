@@ -276,7 +276,7 @@ Ogl::BitmapFont Ogl::LoadBdfFont(std::filesystem::path path)
 
                 for (int i = 0; i < pixels; i++)
                 {
-                    *reinterpret_cast<unsigned int*>(buffer + i * IMAGE_CHANNELS) = value & (0b1000 >> i) ? std::numeric_limits<unsigned int>().max() : 0;
+                    *reinterpret_cast<unsigned int*>(buffer + i * IMAGE_CHANNELS) = value & (0b1000 >> i) ? 0xFFFFFFFF : 0;
                 }
 
                 if (pixels != 0)

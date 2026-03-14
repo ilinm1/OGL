@@ -40,17 +40,15 @@ const static char* FragmentShaderSource =
     "    uvec4 TextureDimensions[];\n"
     "};\n"
     "out vec4 FragColor;\n"
-    "out float gl_FragDepth;\n"
     "void main()\n"
     "{\n"
-    "   gl_FragDepth = DrawingDepth;\n"
     "   vec2 atlasSize = vec2(textureSize(AtlasTexture, 0));\n"
     "   vec4 texData = vec4(TextureDimensions[TextureIndex]);\n"
     "   texData.x /= atlasSize.x; texData.y /= atlasSize.y; texData.z /= atlasSize.x; texData.w /= atlasSize.y;\n"
     "   vec2 atlasCoords = texData.xy + vec2(mod(TextureCoords.x, 1.0f) * texData.z, mod(TextureCoords.y, 1.0f) * texData.w);\n"
     "   vec4 color = texture(AtlasTexture, atlasCoords)\n;"
     "   float isValidTexture = min(1, TextureIndex)\n;"
-    "   color.xyz *= isValidTexture;\n" //color.xyz = isValidTexture ? color.xyz : 0.0f
+    "   color.rbg *= isValidTexture;\n" //color.rgb = isValidTexture ? color.rgb : 0.0f
     "   color.a = max(color.a, 1.0f - isValidTexture);\n" //color.a = isValidTexture ? color.a : 1.0f
     "   FragColor = ModulateColor * color.w + color * (1.0f - ModulateColor.w);\n"
     "}\n";
