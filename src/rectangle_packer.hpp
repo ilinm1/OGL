@@ -3,74 +3,77 @@
 #include <vector>
 #include <vec2.hpp>
 
-struct Rect
+namespace Ogl
 {
-	unsigned int X = 0; //set only by the packer
-	unsigned int Y = 0;
-
-	unsigned int Width = 0;
-	unsigned int Height = 0;
-
-	std::tuple<long, long, long, long> Data; //not used for packing
-};
-
-struct RectanglePacker
-{
-	std::vector<Rect> Rects;
-	std::vector<Rect> PackedRects;
-	std::vector<std::tuple<unsigned int, unsigned int, unsigned int>> HeightLevels = {};
-	unsigned int TotalWidth = 0;
-	unsigned int TotalHeight = 0;
-
-	//not very efficient but it's good enough
-	void Pack()
+	struct Rect
 	{
-		std::sort(Rects.begin(), Rects.end(), [](Rect rect1, Rect rect2) { return rect1.Width > rect2.Width; });
+		unsigned int X = 0; //set only by the packer
+		unsigned int Y = 0;
 
-		for (Rect& rect : Rects)
+		unsigned int Width = 0;
+		unsigned int Height = 0;
+
+		std::tuple<long, long, long, long> Data; //not used for packing
+	};
+
+	struct RectanglePacker
+	{
+		std::vector<Rect> Rects;
+		std::vector<Rect> PackedRects;
+		std::vector<std::tuple<unsigned int, unsigned int, unsigned int>> HeightLevels = {};
+		unsigned int TotalWidth = 0;
+		unsigned int TotalHeight = 0;
+
+		//not very efficient but it's good enough
+		void Pack()
 		{
-			int selectedIndex;
-			int deltaX, deltaY;
-			int minDelta = std::numeric_limits<int>().max();
-			HeightLevels.push_back({ TotalWidth, 0, rect.Width }); //there's always an option to place rect at the rightmost point
+			std::sort(Rects.begin(), Rects.end(), [](Rect rect1, Rect rect2) { return rect1.Width > rect2.Width; });
 
-			for (int i = 0; i < HeightLevels.size(); i++)
+			for (Rect& rect : Rects)
 			{
-				auto [x, y, width] = HeightLevels[i];
+				int selectedIndex;
+				int deltaX, deltaY;
+				int minDelta = std::numeric_limits<int>().max();
+				HeightLevels.push_back({ TotalWidth, 0, rect.Width }); //there's always an option to place rect at the rightmost point
 
-				if (width < rect.Width)
-					continue;
-
-				int dx = x + rect.Width - TotalWidth; dx = std::max(dx, 0);
-				int dy = y + rect.Height - TotalHeight; dy = std::max(dy, 0);
-				int ds = dx * TotalHeight + dy * TotalWidth + dx * dy;
-
-				if (ds < minDelta)
+				for (int i = 0; i < HeightLevels.size(); i++)
 				{
-					selectedIndex = i;
-					deltaX = dx;
-					deltaY = dy;
-					minDelta = ds;
+					auto [x, y, width] = HeightLevels[i];
+
+					if (width < rect.Width)
+						continue;
+
+					int dx = x + rect.Width - TotalWidth; dx = std::max(dx, 0);
+					int dy = y + rect.Height - TotalHeight; dy = std::max(dy, 0);
+					int ds = dx * TotalHeight + dy * TotalWidth + dx * dy;
+
+					if (ds < minDelta)
+					{
+						selectedIndex = i;
+						deltaX = dx;
+						deltaY = dy;
+						minDelta = ds;
+					}
 				}
+
+				TotalWidth += deltaX;
+				TotalHeight += deltaY;
+
+				auto& [selectedX, selectedY, selectedWidth] = HeightLevels[selectedIndex];
+				rect.X = selectedX;
+				rect.Y = selectedY;
+
+				if (selectedIndex != HeightLevels.size() - 1)
+					HeightLevels.pop_back();
+
+				selectedX += rect.Width;
+				selectedWidth -= rect.Width;
+				if (selectedWidth == 0)
+					HeightLevels.erase(HeightLevels.begin() + selectedIndex);
+				HeightLevels.push_back({ selectedX, selectedY, rect.Width });
+
+				PackedRects.push_back(rect);
 			}
-
-			TotalWidth += deltaX;
-			TotalHeight += deltaY;
-
-			auto& [selectedX, selectedY, selectedWidth] = HeightLevels[selectedIndex];
-			rect.X = selectedX;
-			rect.Y = selectedY;
-
-			if (selectedIndex != HeightLevels.size() - 1)
-				HeightLevels.pop_back();
-
-			selectedX += rect.Width;
-			selectedWidth -= rect.Width;
-			if (selectedWidth == 0)
-				HeightLevels.erase(HeightLevels.begin() + selectedIndex);
-			HeightLevels.push_back({ selectedX, selectedY, rect.Width });
-
-			PackedRects.push_back(rect);
 		}
-	}
-};
+	};
+}

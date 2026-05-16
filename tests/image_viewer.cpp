@@ -30,7 +30,7 @@ struct ImageViewerLayer : Ogl::Layer
         if (Texture.Index == 0)
             return;
 
-        DrawRect(Vec2(-1), Vec2(1), COLOR_TRANSPARENT, Texture, false);
+        DrawRect(Ogl::Vec2(-1), Ogl::Vec2(1), COLOR_TRANSPARENT, Texture, false);
     }
 };
 

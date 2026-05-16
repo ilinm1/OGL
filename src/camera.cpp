@@ -77,7 +77,7 @@ void Ogl::SetCameraScale(float zoom)
 }
 
 //converts a point in NDC/world coordinates to pixels
-Vec2 Ogl::PointToPixels(Vec2 point, bool inWorld)
+Ogl::Vec2 Ogl::PointToPixels(Vec2 point, bool inWorld)
 {
     if (inWorld)
         point = WorldToNDCMatrix.TransformVector(point);
@@ -85,7 +85,7 @@ Vec2 Ogl::PointToPixels(Vec2 point, bool inWorld)
 }
 
 //converts a point in pixels to NDC/world coordinates
-Vec2 Ogl::PointFromPixels(Vec2 point, bool inWorld)
+Ogl::Vec2 Ogl::PointFromPixels(Vec2 point, bool inWorld)
 {
     point = PixelToNDCMatrix.TransformVector(point);
     if (inWorld)
@@ -95,7 +95,7 @@ Vec2 Ogl::PointFromPixels(Vec2 point, bool inWorld)
 
 //unlike 'PointToPixels' doesn't account for camera's position, rotation, different coordinate centers, etc. 
 //only converting the actual dimensions of the object
-Vec2 Ogl::SizeToPixels(Vec2 size, bool inWorld)
+Ogl::Vec2 Ogl::SizeToPixels(Vec2 size, bool inWorld)
 {
     if (inWorld)
         size = Vec2(size.X / Ogl::CameraSize.X / Ogl::CameraScale, size.Y / Ogl::CameraSize.Y / Ogl::CameraScale);
@@ -106,7 +106,7 @@ Vec2 Ogl::SizeToPixels(Vec2 size, bool inWorld)
 
 //unlike 'PointFromPixels' doesn't account for camera's position, rotation, different coordinate centers, etc. 
 //only converting the actual dimensions of the object
-Vec2 Ogl::SizeFromPixels(Vec2 size, bool inWorld)
+Ogl::Vec2 Ogl::SizeFromPixels(Vec2 size, bool inWorld)
 {
     auto [width, height] = Ogl::GetWindowSize();
     size = Vec2(size.X / width, size.Y / height);

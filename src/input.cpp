@@ -2,7 +2,7 @@
 
 //input methods
 
-Vec2 Ogl::GetCursorPos()
+Ogl::Vec2 Ogl::GetCursorPos()
 {
     double cx, cy;
     glfwGetCursorPos(Window, &cx, &cy);
@@ -51,12 +51,12 @@ bool Ogl::OpenFilePicker(std::string title, bool write, std::filesystem::path& p
         0,
         1,
         pathStr.data(),
-        pathStr.capacity(),
+        static_cast<DWORD>(pathStr.capacity()),
         NULL,
         0,
         NULL,
         title.c_str(),
-        OFN_FILEMUSTEXIST | (write ? OFN_OVERWRITEPROMPT | OFN_NOREADONLYRETURN : 0),
+        static_cast<DWORD>(OFN_FILEMUSTEXIST | (write ? OFN_OVERWRITEPROMPT | OFN_NOREADONLYRETURN : 0)),
         0,
         0,
         NULL,

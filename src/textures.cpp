@@ -17,7 +17,7 @@ void Ogl::SetTextureFilter(unsigned int minification, unsigned int magnification
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magnification);
 }
 
-Ogl::Texture AddTexture(std::filesystem::path path, Rect rect)
+Ogl::Texture AddTexture(std::filesystem::path path, Ogl::Rect rect)
 {
     Ogl::TextureDimensionsVector.push_back({ rect.X, rect.Y, rect.Width, rect.Height });
     Ogl::TexturesToUpdate.push_back(Ogl::Textures.size());

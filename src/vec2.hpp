@@ -2,126 +2,129 @@
 
 #include <cmath>
 
-struct Vec2
+namespace Ogl
 {
-    float X = 0;
-    float Y = 0;
-
-    Vec2() {};
-
-    Vec2(float xy)
+    struct Vec2
     {
-        X = Y = xy;
-    }
+        float X = 0;
+        float Y = 0;
 
-    Vec2(float x, float y)
-    {
-        X = x; Y = y;
-    }
+        Vec2() {};
 
-    //returns vector with maximal component values of both input vectors
-    static Vec2 Max(Vec2 a, Vec2 b)
-    {
-        return Vec2(std::max(a.X, b.X), std::max(a.Y, b.Y));
-    }
+        Vec2(float xy)
+        {
+            X = Y = xy;
+        }
 
-    //returns vector with minimal component values of both input vectors
-    static Vec2 Min(Vec2 a, Vec2 b)
-    {
-        return Vec2(std::min(a.X, b.X), std::min(a.Y, b.Y));
-    }
+        Vec2(float x, float y)
+        {
+            X = x; Y = y;
+        }
 
-    //in radians
-    static Vec2 FromAngle(float angle)
-    {
-        return Vec2(cosf(angle), sinf(angle));
-    }
+        //returns vector with maximal component values of both input vectors
+        static Vec2 Max(Vec2 a, Vec2 b)
+        {
+            return Vec2(std::max(a.X, b.X), std::max(a.Y, b.Y));
+        }
 
-    Vec2 Rotated(float angle)
-    {
-        return Vec2(X * cosf(angle) - Y * sinf(angle), Y * cosf(angle) - X * sinf(angle));
-    }
+        //returns vector with minimal component values of both input vectors
+        static Vec2 Min(Vec2 a, Vec2 b)
+        {
+            return Vec2(std::min(a.X, b.X), std::min(a.Y, b.Y));
+        }
 
-    float Length()
-    {
-        return sqrtf(X * X + Y * Y);
-    }
+        //in radians
+        static Vec2 FromAngle(float angle)
+        {
+            return Vec2(cosf(angle), sinf(angle));
+        }
 
-    float Dotp(const Vec2& v)
-    {
-        return X * v.X + Y * v.Y;
-    }
+        Vec2 Rotated(float angle)
+        {
+            return Vec2(X * cosf(angle) - Y * sinf(angle), Y * cosf(angle) - X * sinf(angle));
+        }
 
-    Vec2 Normalized()
-    {
-        float l = Length();
-        return Vec2(X / l, Y / l);
-    }
+        float Length()
+        {
+            return sqrtf(X * X + Y * Y);
+        }
 
-    Vec2 Abs()
-    {
-        return Vec2 { abs(X), abs(Y) };
-    }
+        float Dotp(const Vec2& v)
+        {
+            return X * v.X + Y * v.Y;
+        }
 
-    Vec2& operator+=(const Vec2& r)
-    {
-        X += r.X;
-        Y += r.Y;
-        return *this;
-    }
+        Vec2 Normalized()
+        {
+            float l = Length();
+            return Vec2(X / l, Y / l);
+        }
 
-    friend Vec2 operator+(Vec2 l, const Vec2& r)
-    {
-        l += r;
-        return l;
-    }
+        Vec2 Abs()
+        {
+            return Vec2{ abs(X), abs(Y) };
+        }
 
-    Vec2& operator-=(const Vec2& r)
-    {
-        X -= r.X;
-        Y -= r.Y;
-        return *this;
-    }
+        Vec2& operator+=(const Vec2& r)
+        {
+            X += r.X;
+            Y += r.Y;
+            return *this;
+        }
 
-    friend Vec2 operator-(Vec2 l, const Vec2& r)
-    {
-        l -= r;
-        return l;
-    }
+        friend Vec2 operator+(Vec2 l, const Vec2& r)
+        {
+            l += r;
+            return l;
+        }
 
-    Vec2& operator*=(const float& r)
-    {
-        X *= r;
-        Y *= r;
-        return *this;
-    }
+        Vec2& operator-=(const Vec2& r)
+        {
+            X -= r.X;
+            Y -= r.Y;
+            return *this;
+        }
 
-    friend Vec2 operator*(Vec2 l, const float& r)
-    {
-        l *= r;
-        return l;
-    }
+        friend Vec2 operator-(Vec2 l, const Vec2& r)
+        {
+            l -= r;
+            return l;
+        }
 
-    Vec2& operator/=(const float& r)
-    {
-        X /= r;
-        Y /= r;
-        return *this;
-    }
+        Vec2& operator*=(const float& r)
+        {
+            X *= r;
+            Y *= r;
+            return *this;
+        }
 
-    friend Vec2 operator/(Vec2 l, const float& r)
-    {
-        l /= r;
-        return l;
-    }
+        friend Vec2 operator*(Vec2 l, const float& r)
+        {
+            l *= r;
+            return l;
+        }
 
-    friend bool operator==(const Vec2& l, const Vec2& r)
-    {
-        return l.X == r.X && l.Y == r.Y;
-    }
+        Vec2& operator/=(const float& r)
+        {
+            X /= r;
+            Y /= r;
+            return *this;
+        }
 
-    friend bool operator!=(const Vec2& l, const Vec2& r)
-    {
-        return !(l == r);
-    }
-};
+        friend Vec2 operator/(Vec2 l, const float& r)
+        {
+            l /= r;
+            return l;
+        }
+
+        friend bool operator==(const Vec2& l, const Vec2& r)
+        {
+            return l.X == r.X && l.Y == r.Y;
+        }
+
+        friend bool operator!=(const Vec2& l, const Vec2& r)
+        {
+            return !(l == r);
+        }
+    };
+}

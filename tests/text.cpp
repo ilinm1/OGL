@@ -24,7 +24,7 @@ struct TextLayer : Ogl::Layer
 
     static void OnWindowResize(Ogl::WindowResizeEvent ev, void* data, bool& handled)
     {
-        Ogl::SetCameraSize(Vec2(ev.Width, ev.Height) / PixelsPerMeter);
+        Ogl::SetCameraSize(Ogl::Vec2(ev.Width, ev.Height) / PixelsPerMeter);
     }
 
     static void OnKeyPress(Ogl::KeyPressEvent ev, void* data, bool& handled)
@@ -72,26 +72,26 @@ struct TextLayer : Ogl::Layer
     void Draw() override
     {
         if (Ogl::IsKeyPressed(GLFW_KEY_UP))
-            Ogl::SetCameraPosition(Ogl::CameraPosition + Vec2(0.0f, 0.05f));
+            Ogl::SetCameraPosition(Ogl::CameraPosition + Ogl::Vec2(0.0f, 0.05f));
 
         if (Ogl::IsKeyPressed(GLFW_KEY_DOWN))
-            Ogl::SetCameraPosition(Ogl::CameraPosition + Vec2(0.0f, -0.05f));
+            Ogl::SetCameraPosition(Ogl::CameraPosition + Ogl::Vec2(0.0f, -0.05f));
 
         if (Ogl::IsKeyPressed(GLFW_KEY_LEFT))
-            Ogl::SetCameraPosition(Ogl::CameraPosition + Vec2(-0.05f, 0.0f));
+            Ogl::SetCameraPosition(Ogl::CameraPosition + Ogl::Vec2(-0.05f, 0.0f));
 
         if (Ogl::IsKeyPressed(GLFW_KEY_RIGHT))
-            Ogl::SetCameraPosition(Ogl::CameraPosition + Vec2(0.05f, 0.0f));
+            Ogl::SetCameraPosition(Ogl::CameraPosition + Ogl::Vec2(0.05f, 0.0f));
 
         if (Redraw)
-            DrawText(Vec2(0.0f), Text, 1.0f, Font);
+            DrawText(Ogl::Vec2(0.0f), Text, 1.0f, Font);
     }
 };
 
 int main()
 {
     Ogl::Initialize(500, 500, "Text", false);
-    Ogl::SetCameraSize(Vec2(500.0f) / PixelsPerMeter);
+    Ogl::SetCameraSize(Ogl::Vec2(500.0f) / PixelsPerMeter);
 
     TextLayer textLayer = {};
     Ogl::AddLayer(&textLayer);

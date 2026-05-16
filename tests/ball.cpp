@@ -19,7 +19,7 @@ struct TriangleLayer : Ogl::Layer
         if (!Redraw)
             return;
 
-        DrawTriangle(Vec2(-0.75f, -0.75f), Vec2(0.75f, -0.75f), Vec2(0.0f, 0.75f), COLOR_TRANSPARENT, Texture);
+        DrawTriangle(Ogl::Vec2(-0.75f, -0.75f), Ogl::Vec2(0.75f, -0.75f), Ogl::Vec2(0.0f, 0.75f), COLOR_TRANSPARENT, Texture);
     }
 };
 
@@ -27,17 +27,17 @@ struct BallLayer : Ogl::Layer
 {
     Ogl::Texture Texture;
 
-    Color BallColor;
-    Vec2 BallPos = Vec2(0.0f);
-    Vec2 BallVelocity;
+    Ogl::Color BallColor;
+    Ogl::Vec2 BallPos = Ogl::Vec2(0.0f);
+    Ogl::Vec2 BallVelocity;
     float VelocityAngle;
     float TotalTime = 0.0f;
 
-    Color GradientColor1 = Color(255, 0, 0, 128);
-    Color GradientColor2 = Color(0, 0, 255, 128);
+    Ogl::Color GradientColor1 = Ogl::Color(255, 0, 0, 128);
+    Ogl::Color GradientColor2 = Ogl::Color(0, 0, 255, 128);
     const float GradientTime = 10.0f;
 
-    const Vec2 BallSize = Vec2(0.5f);
+    const Ogl::Vec2 BallSize = Ogl::Vec2(0.5f);
     const float BallSpeed = 1.0f;
     const float TimeStep = 0.1f;
     
@@ -54,7 +54,7 @@ struct BallLayer : Ogl::Layer
         distribution.reset();
 
         VelocityAngle = 2.0f * PI * distribution(engine);
-        BallVelocity = Vec2::FromAngle(VelocityAngle) * BallSpeed;
+        BallVelocity = Ogl::Vec2::FromAngle(VelocityAngle) * BallSpeed;
     }
 
     float Clamp(float v, float min, float max)
@@ -64,13 +64,13 @@ struct BallLayer : Ogl::Layer
         return v;
     }
 
-    Color GetGradientColor(float t)
+    Ogl::Color GetGradientColor(float t)
     {
         t = fmod(t / GradientTime, 1.0f);
 
         if (t <= TimeStep / GradientTime)
         {
-            Color oldColor = GradientColor1;
+            Ogl::Color oldColor = GradientColor1;
             GradientColor1 = GradientColor2;
             GradientColor2 = oldColor;
         }
@@ -85,18 +85,18 @@ struct BallLayer : Ogl::Layer
         BallColor = GetGradientColor(TotalTime);
         DrawRect(BallPos, BallPos + BallSize, BallColor, Texture);
 
-        Vec2 bounds = Ogl::CameraSize / 2;
+        Ogl::Vec2 bounds = Ogl::CameraSize / 2;
         if (BallPos.X + BallSize.X > bounds.X || BallPos.X < -bounds.X)
         {
             BallPos.X = Clamp(BallPos.X, -bounds.X, bounds.X);
             VelocityAngle = PI - VelocityAngle;
-            BallVelocity = Vec2::FromAngle(VelocityAngle) * BallSpeed;
+            BallVelocity = Ogl::Vec2::FromAngle(VelocityAngle) * BallSpeed;
         }
         if (BallPos.Y + BallSize.Y > bounds.Y || BallPos.Y < -bounds.Y)
         {
             BallPos.Y = Clamp(BallPos.Y, -bounds.Y, bounds.Y);
             VelocityAngle = -VelocityAngle;
-            BallVelocity = Vec2::FromAngle(VelocityAngle) * BallSpeed;
+            BallVelocity = Ogl::Vec2::FromAngle(VelocityAngle) * BallSpeed;
         }
     }
 };
@@ -104,7 +104,7 @@ struct BallLayer : Ogl::Layer
 int main()
 {
     Ogl::Initialize(300, 300, "Ball", false);
-    Ogl::SetCameraSize(Vec2(3.0f));
+    Ogl::SetCameraSize(Ogl::Vec2(3.0f));
 
     TriangleLayer triangleLayer = {};
     Ogl::AddLayer(&triangleLayer);
