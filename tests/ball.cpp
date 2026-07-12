@@ -1,6 +1,6 @@
 #include <format>
 #include <random>
-#include <ogl.hpp>
+#include "ogl/ogl.hpp"
 
 #define PI 3.1415
 
@@ -8,7 +8,7 @@ struct TriangleLayer : Ogl::Layer
 {
     Ogl::Texture Texture;
 
-    TriangleLayer() : Ogl::Layer()
+    TriangleLayer()
     {
         Texture = Ogl::ResolveTexture("test.png");
         Redraw = true;
@@ -48,9 +48,9 @@ struct BallLayer : Ogl::Layer
 
         Texture = Ogl::ResolveTexture("test.png");
 
-        static std::default_random_engine engine;
-        engine.seed(std::time(NULL));
-        static std::uniform_real_distribution<float> distribution(0.0f, 1.0f);
+        std::default_random_engine engine;
+        engine.seed(std::time(nullptr));
+        std::uniform_real_distribution<float> distribution(0.0f, 1.0f);
         distribution.reset();
 
         VelocityAngle = 2.0f * PI * distribution(engine);

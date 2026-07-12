@@ -1,4 +1,4 @@
-#include <ogl.hpp>
+#include "ogl/ogl.hpp"
 
 //input methods
 
@@ -23,8 +23,8 @@ bool Ogl::IsMouseButtonPressed(int button)
 
 std::string Ogl::GetClipboardContents()
 {
-    const char* ptr = glfwGetClipboardString(NULL);
-    if (ptr == NULL)
+    const char* ptr = glfwGetClipboardString(nullptr);
+    if (ptr == nullptr)
         return "";
     return std::string(ptr);
 }
@@ -44,25 +44,25 @@ bool Ogl::OpenFilePicker(std::string title, bool write, std::filesystem::path& p
     //https://learn.microsoft.com/en-us/windows/win32/api/commdlg/ns-commdlg-openfilenamea
     OPENFILENAMEA schizoStruct = {
         sizeof(OPENFILENAMEA),
-        NULL,
-        NULL,
-        NULL,
-        NULL,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
         0,
         1,
         pathStr.data(),
-        static_cast<DWORD>(pathStr.capacity()),
-        NULL,
+        pathStr.capacity(),
+        nullptr,
         0,
-        NULL,
+        nullptr,
         title.c_str(),
-        static_cast<DWORD>(OFN_FILEMUSTEXIST | (write ? OFN_OVERWRITEPROMPT | OFN_NOREADONLYRETURN : 0)),
+        OFN_FILEMUSTEXIST | (write ? OFN_OVERWRITEPROMPT | OFN_NOREADONLYRETURN : 0),
         0,
         0,
-        NULL,
-        NULL,
-        NULL,
-        NULL
+        nullptr,
+        0,
+        nullptr,
+        nullptr
     };
 
     GetOpenFileNameA(&schizoStruct);

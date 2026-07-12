@@ -1,7 +1,7 @@
 #include <codecvt>
-#include <ogl.hpp>
+#include "ogl/ogl.hpp"
 
-const float PixelsPerMeter = 50.0f; //can't define in class
+const float PixelsPerMeter = 50.0f;
 
 struct TextLayer : Ogl::Layer
 {
@@ -9,7 +9,7 @@ struct TextLayer : Ogl::Layer
     std::string Text = "Use arrows to move the camera.\nScroll to zoom in/out.\nYou can use enter, backspace and paste with ctrl + V.\n:)";
     std::wstring_convert<std::codecvt_utf8<unsigned int>, unsigned int> Utf32Converter;
 
-    TextLayer() : Ogl::Layer()
+    TextLayer()
     {
         IsWorldSpace = true;
         Redraw = true;
@@ -22,15 +22,16 @@ struct TextLayer : Ogl::Layer
         Subscribe<Ogl::ScrollEvent>(&OnScroll);
     }
 
-    static void OnWindowResize(Ogl::WindowResizeEvent ev, void* data, bool& handled)
+    static bool OnWindowResize(Ogl::WindowResizeEvent& ev, void* data)
     {
         Ogl::SetCameraSize(Ogl::Vec2(ev.Width, ev.Height) / PixelsPerMeter);
+        return false;
     }
 
-    static void OnKeyPress(Ogl::KeyPressEvent ev, void* data, bool& handled)
+    static bool OnKeyPress(Ogl::KeyPressEvent& ev, void* data)
     {
         if (ev.Action == GLFW_RELEASE)
-            return;
+            return false;
 
         TextLayer& layer = *reinterpret_cast<TextLayer*>(data);
         std::string& text = layer.Text;
@@ -39,22 +40,27 @@ struct TextLayer : Ogl::Layer
         {
             text.push_back('\n');
             layer.Redraw = true;
+            return true;
         }
 
         if (ev.Key == GLFW_KEY_V && ev.Modifiers & GLFW_MOD_CONTROL)
         {
             text.append(Ogl::GetClipboardContents());
             layer.Redraw = true;
+            return true;
         }
 
         if (ev.Key == GLFW_KEY_BACKSPACE && text.length() > 0)
         {
             text.resize(text.size() - 1);
             layer.Redraw = true;
+            return true;
         }
+
+        return false;
     }
 
-    static void OnCharacterReceived(Ogl::CharacterEvent ev, void* data, bool& handled)
+    static bool OnCharacterReceived(Ogl::CharacterEvent& ev, void* data)
     {
         TextLayer& layer = *reinterpret_cast<TextLayer*>(data);
 
@@ -62,11 +68,13 @@ struct TextLayer : Ogl::Layer
         layer.Text.append(layer.Utf32Converter.to_bytes(&ev.Codepoint, &ev.Codepoint + 1));
 
         layer.Redraw = true;
+        return true;
     }
 
-    static void OnScroll(Ogl::ScrollEvent ev, void* data, bool& handled)
+    static bool OnScroll(Ogl::ScrollEvent& ev, void* data)
     {
         Ogl::SetCameraScale(Ogl::CameraScale + ev.OffsetY * 0.05f);
+        return true;
     }
 
     void Draw() override

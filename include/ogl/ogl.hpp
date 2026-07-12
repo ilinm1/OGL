@@ -9,6 +9,7 @@
 #include "vec2.hpp"
 #include "mat3.hpp"
 #include "color.hpp"
+#include "events.hpp"
 #include "rectangle_packer.hpp"
 
 #define IMAGE_CHANNELS 4 //rgba, just to avoid magic numbers
@@ -52,39 +53,6 @@ namespace Ogl
 
     //input events
 
-    template <class T>
-    using EventHandler = void(*)(T, void*, bool&); //event, data, whether event has been handled
-
-    template <class T>
-    struct Subscription
-    {
-        EventHandler<T> Handler;
-        int Priority; //handlers with higher priority will be called first
-        void* Data;
-
-        friend bool operator==(const Subscription<T>& l, const Subscription<T>& r)
-        {
-            return l.Handler == r.Handler && l.Data == r.Data;
-        }
-
-        bool operator>(const Subscription<T>& x) const
-        {
-            return Priority > x.Priority;
-        }
-    };
-
-    template <class T>
-    struct std::hash<Ogl::Subscription<T>>
-    {
-        std::size_t operator()(const Ogl::Subscription<T>& sub) const noexcept
-        {
-            return ((std::hash<void*>()(sub.Handler) ^ (std::hash<void*>()(sub.Data) << 1)) >> 1);
-        }
-    };
-
-    template <class T>
-    using SubscriptionSet = std::set<Subscription<T>, std::greater<Subscription<T>>>;
-
     struct WindowResizeEvent
     {
         int Width;
@@ -117,45 +85,6 @@ namespace Ogl
         double OffsetY;
     };
 
-    //event sub/unsub methods
-
-    template <class T>
-    SubscriptionSet<T>& GetSubscriptions()
-    {
-        static SubscriptionSet<T> subs;
-        return subs;
-    }
-
-    //subscribes 'handler' to the event T
-    //if 'layer' is set an unsubscription handler will be created and called automatically upon layer's destruction, otherwise 'Unsubscribe' should be called manually
-    //if 'data' is not null it will be passed to the handler, otherwise 'layer' will be passed instead
-    //handlers with higher 'priority' will get called first
-    template <class T>
-    const Subscription<T>& Subscribe(EventHandler<T> handler, void* data = NULL, int priority = 0)
-    {
-        const Subscription<T>& sub = *(GetSubscriptions<T>().insert({ handler, priority, data }).first);
-        return sub;
-    }
-
-    template <class T>
-    void Unsubscribe(const Subscription<T>& sub)
-    {
-        GetSubscriptions<T>().erase(sub);
-    }
-
-    //invokes event T, calling handlers with higher priority first
-    template <class T>
-    void Invoke(T event)
-    {
-        bool handled = false;
-        for (Subscription sub : GetSubscriptions<T>())
-        {
-            sub.Handler(event, sub.Data, handled);
-            if (handled)
-                return;
-        }
-    }
-
     //texture data
 
     //relative to atlas
@@ -180,11 +109,11 @@ namespace Ogl
         unsigned int MaxHeight;
 
         size_t GlyphCount = 0;
-        std::vector<std::tuple<unsigned int, unsigned int, size_t>> EncodingRanges; //first utf32 codepoint, second codepoint, first glyph index
+        std::vector<std::tuple<unsigned int, unsigned int, size_t>> EncodingRanges; //first utf32 codepoint, second codepoint, first glyph index (to avoid having a glyph for every utf codepoint)
     };
 
     //rendering layer, each layer owns a block of video memory
-    struct Layer
+    struct Layer : Ogl::Subscriber
     {
         size_t BlockIndex; //index of the block of video memory owned by this layer
         size_t Id; //mostly for logging purpouses, never repeat
@@ -200,9 +129,7 @@ namespace Ogl
 
         size_t RenderingDataSize = 0;
         size_t RenderingDataUsed = 0;
-        char* RenderingData = NULL;
-
-        std::vector<std::function<void()>> UnsubHandlers; //lambdas wrapped in 'std::function' which will be called upon layer's destruction to unsubscribe it from any events
+        char* RenderingData = nullptr;
 
         Layer(size_t renderingDataSize = 256)
         {
@@ -215,20 +142,7 @@ namespace Ogl
 
         virtual ~Layer()
         {
-            for (std::function<void()> handler : UnsubHandlers)
-            {
-                handler();
-            }
             delete[] RenderingData;
-        }
-
-        //identical to the other 'Subscribe' method but passes layer to the handler and automatically adds an unsub callback 
-        //which will be called on layer's destruction
-        template <class T>
-        void Subscribe(EventHandler<T> handler, int priority = 0)
-        {
-            Subscription<T> sub = Ogl::Subscribe(handler, this, priority);
-            UnsubHandlers.push_back(std::function<void()>([sub]() { Ogl::Unsubscribe(sub); }));
         }
 
         void WriteVertexData(const Vec2* coords, const Vec2* texCoords, const Color* colors, Texture texture, size_t count);
@@ -237,6 +151,49 @@ namespace Ogl
         void DrawText(Vec2 pos, std::string text, float scale, BitmapFont& font, Color color = COLOR_TRANSPARENT, bool matchResolution = false, bool multiline = true, bool bounded = false, float maxWidth = 0.0f, float maxHeight = 0.0f);
         void DrawLine(Vec2 a, Vec2 b, Color color);
     };
+
+    //widgets
+
+    namespace Widgets
+    {
+        struct WidgetLayer;
+
+        struct Widget : Subscriber
+        {
+            WidgetLayer* Parent;
+            Vec2 Position;
+            Vec2 Dimensions;
+
+            Widget() {}
+
+            Widget(Vec2 position, Vec2 dimensions)
+            {
+                Position = position;
+                Dimensions = dimensions;
+            }
+
+            virtual void Draw() {}
+        };
+
+        struct WidgetLayer : Layer
+        {
+            std::vector<Widget*> Widgets;
+
+            void AddWidget(Widget* widgetPtr)
+            {
+                widgetPtr->Parent = this;
+                Widgets.push_back(widgetPtr);
+            }
+
+            void Draw() override
+            {
+                for (Widget* widget : Widgets)
+                {
+                    widget->Draw();
+                }
+            }
+        };
+    }
 
     void Log(std::string msg);
 
@@ -272,10 +229,11 @@ namespace Ogl
 
     void SetTextureFilter(unsigned int minification, unsigned int magnification);
     std::vector<Texture> LoadTextures(std::vector<std::filesystem::path> paths);
-    BitmapFont LoadBdfFont(std::filesystem::path path);
+    BitmapFont& LoadBdfFont(std::filesystem::path path);
     std::vector<Texture> LoadTexturesFromPath(std::filesystem::path path);
     Texture ResolveTexture(std::filesystem::path path);
-    BitmapFont ResolveFont(std::filesystem::path path);
+    BitmapFont& ResolveFont(std::filesystem::path path);
+    void SaveAtlas(std::filesystem::path path);
 
     //layer methods
 
@@ -324,9 +282,9 @@ namespace Ogl
     inline std::vector<Texture> Textures = { Texture {} }; //zero index is reserved as an invalid texture, so drawing commands will ignore it
     inline std::vector<BitmapFont> Fonts;
     inline std::vector<TextureDimensions> TextureDimensionsVector = { TextureDimensions {} }; //texture positions and sizes relative to atlas, storing them separately from other texture data since it must be sent to the fragment shader
-    inline std::vector<size_t> TexturesToUpdate; //indices of newly added/moved textures which require their data to be resent to the GPU
+    inline std::vector<unsigned int> TexturesToUpdate; //indices of newly added/moved textures which require their data to be resent to the GPU
 
     //layers
-    inline size_t LastLayerId = 0;
+    inline unsigned int LastLayerId = 0; //for logging purpouses, so that each layer has a unique ID
     inline std::vector<Layer*> Layers;
 }

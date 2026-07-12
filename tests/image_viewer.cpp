@@ -1,15 +1,15 @@
-#include <ogl.hpp>
+#include "ogl/ogl.hpp"
 
 struct ImageViewerLayer : Ogl::Layer
 {
     Ogl::Texture Texture;
 
-    ImageViewerLayer() : Ogl::Layer()
+    ImageViewerLayer()
     {
         Subscribe<Ogl::KeyPressEvent>(&OnKeyPress);
     }
 
-    static void OnKeyPress(Ogl::KeyPressEvent ev, void* data, bool& handled)
+    static bool OnKeyPress(Ogl::KeyPressEvent& ev, void* data)
     {
         ImageViewerLayer* layer = reinterpret_cast<ImageViewerLayer*>(data);
 
@@ -22,7 +22,11 @@ struct ImageViewerLayer : Ogl::Layer
                 Ogl::TextureDimensions textureDimensions = Ogl::TextureDimensionsVector[layer->Texture.Index];
                 Ogl::SetWindowSize(textureDimensions.Width, textureDimensions.Height);
             }
+
+            return true;
         }
+
+        return false;
     }
 
     void Draw() override

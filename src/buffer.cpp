@@ -1,4 +1,4 @@
-#include <ogl.hpp>
+#include "ogl/ogl.hpp"
 
 //not doing all of this in constructor since glad must be initialized beforehand
 void Ogl::Buffer::Initialize(
@@ -17,7 +17,7 @@ void Ogl::Buffer::Initialize(
     Binding = binding;
 
     glBindBuffer(binding, Name);
-    glBufferData(binding, size, NULL, Usage);
+    glBufferData(binding, size, nullptr, Usage);
 }
 
 size_t Ogl::Buffer::AddBlock(unsigned int size)

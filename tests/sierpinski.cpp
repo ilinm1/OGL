@@ -1,7 +1,7 @@
 #include <chrono>
 #include <thread>
 #include <iostream>
-#include <ogl.hpp>
+#include "ogl/ogl.hpp"
 
 struct SierpinskiLayer : Ogl::Layer
 {
@@ -13,7 +13,7 @@ struct SierpinskiLayer : Ogl::Layer
     int ColorIndex = 0;
     Ogl::Color Pallete[6] = { Ogl::Color(255, 255, 255), Ogl::Color(255, 0, 0), Ogl::Color(0, 255, 0), Ogl::Color(0, 0, 255), Ogl::Color(255, 255, 0), Ogl::Color(255, 0, 255) };
 
-    SierpinskiLayer() : Ogl::Layer()
+    SierpinskiLayer()
     {
         IsWorldSpace = true;
     }

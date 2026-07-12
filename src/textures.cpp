@@ -2,11 +2,10 @@
 #include <filesystem>
 #include <fstream>
 #include <algorithm>
-#include <glad/glad.h>
-#include <stb_image.h>
-#include <stb_image_write.h>
-#include <ogl.hpp>
-#include <rectangle_packer.hpp>
+#include "glad/glad.h"
+#include "stb_image.h"
+#include "stb_image_write.h"
+#include "ogl/ogl.hpp"
 
 //texture methods
 
@@ -25,21 +24,21 @@ Ogl::Texture AddTexture(std::filesystem::path path, Ogl::Rect rect)
     return Ogl::Textures.back();
 }
 
+//updates texture dimensions stored in the SSBO and resends the entire atlas to the GPU
 void UpdateTextureData()
 {
-    size_t maxIndex = *std::max_element(Ogl::TexturesToUpdate.begin(), Ogl::TexturesToUpdate.end());
-    size_t requiredSsboSize = (maxIndex + 1) * sizeof(Ogl::TextureDimensions);
+    unsigned int maxIndex = *std::max_element(Ogl::TexturesToUpdate.begin(), Ogl::TexturesToUpdate.end());
+    unsigned int requiredSsboSize = (maxIndex + 1) * sizeof(Ogl::TextureDimensions);
     if (Ogl::Ssbo.Size < requiredSsboSize)
-        throw std::runtime_error("Out of video memory.");
+        throw std::runtime_error("SSBO size exceeded.");
 
-    for (size_t index : Ogl::TexturesToUpdate)
+    for (unsigned int index : Ogl::TexturesToUpdate)
     {
         Ogl::TextureDimensions dimensions = Ogl::TextureDimensionsVector[index];
         glBufferSubData(GL_SHADER_STORAGE_BUFFER, index * sizeof(Ogl::TextureDimensions), sizeof(Ogl::TextureDimensions), &dimensions);
     }
 
     Ogl::TexturesToUpdate.clear();
-
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, Ogl::AtlasWidth, Ogl::AtlasHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, Ogl::AtlasData);
 }
 
@@ -67,20 +66,6 @@ void WriteToAtlas(unsigned char* data, unsigned int x, unsigned int y, unsigned 
     }
 }
 
-//writes zeroes to each channel of every pixel in the specified area
-void ZeroAtlas(unsigned int x, unsigned int y, unsigned int width, unsigned int height)
-{
-    if (x + width > Ogl::AtlasWidth || y + height > Ogl::AtlasHeight)
-        throw std::runtime_error("Tried to write out of atlas bounds.");
-
-    y = Ogl::AtlasHeight - y - height;
-
-    for (int i = 0; i < height; i++)
-    {
-        std::memset(Ogl::AtlasData + (Ogl::AtlasWidth * (i + y) + x) * IMAGE_CHANNELS, 0, width * IMAGE_CHANNELS);
-    }
-}
-
 void ResizeAtlas(unsigned int width, unsigned int height)
 {
     if (Ogl::AtlasWidth == width && Ogl::AtlasHeight == height)
@@ -96,7 +81,7 @@ void ResizeAtlas(unsigned int width, unsigned int height)
     Ogl::AtlasHeight = height;
     Ogl::AtlasData = data;
 
-    if (oldData != NULL)
+    if (oldData != nullptr)
     {
         WriteToAtlas(oldData, 0, 0, std::min(oldWidth, width), std::min(oldHeight, height), false);
         delete[] oldData;
@@ -121,7 +106,7 @@ std::vector<Ogl::Texture> Ogl::LoadTextures(std::vector<std::filesystem::path> p
 
         int width, height, components;
         stbi_info(path.string().c_str(), &width, &height, &components);
-        AtlasPacker.Rects.push_back({ .Width = static_cast<unsigned int>(width), .Height = static_cast<unsigned int>(height), .Data = { i, 0, 0, 0 } });
+        AtlasPacker.Rects.push_back({ .Width = static_cast<unsigned int>(width), .Height = static_cast<unsigned int>(height), .Data = { i, 0 } });
     }
 
     //packing newly generated rects & resizing the atlas
@@ -136,7 +121,7 @@ std::vector<Ogl::Texture> Ogl::LoadTextures(std::vector<std::filesystem::path> p
 
         int _;
         unsigned char* data = stbi_load(path.string().c_str(), &_, &_, &_, IMAGE_CHANNELS);
-        if (data == NULL)
+        if (data == nullptr)
             throw std::runtime_error(std::format("STBI error: '{}'.", stbi_failure_reason()));
 
         WriteToAtlas(data, rect.X, rect.Y, rect.Width, rect.Height);
@@ -153,7 +138,7 @@ std::vector<Ogl::Texture> Ogl::LoadTextures(std::vector<std::filesystem::path> p
 }
 
 //barebones BDF font loader
-Ogl::BitmapFont Ogl::LoadBdfFont(std::filesystem::path path)
+Ogl::BitmapFont& Ogl::LoadBdfFont(std::filesystem::path path)
 {
     BitmapFont result = {};
 
@@ -170,8 +155,8 @@ Ogl::BitmapFont Ogl::LoadBdfFont(std::filesystem::path path)
     //reading glyph data
     //'Rect' data is used for storing encoding, bitmap starting byte, x offset, y offset (in that order)
     std::string line;
-    const int maxOffset = 256; //max x/y offset
-    int code, width, height, offsetX, offsetY;
+    const unsigned int maxOffset = 256; //max x/y offset
+    int code, offsetX, offsetY;
     while (!file.eof())
     {
         std::getline(file, line);
@@ -195,22 +180,15 @@ Ogl::BitmapFont Ogl::LoadBdfFont(std::filesystem::path path)
         if (line.rfind("BBX") == 0)
         {
             Rect& glyphRect = AtlasPacker.Rects.back();
-            sscanf(line.substr(3).data(), "%d %d %d %d", &width, &height, &offsetX, &offsetY);
+            sscanf(line.substr(3).data(), "%d %d %d %d", &glyphRect.Width, &glyphRect.Height, &offsetX, &offsetY);
 
-            if (offsetX > maxOffset || offsetY > maxOffset)
-                throw std::runtime_error("Glyph X/Y offset is too high.");
-
-            glyphRect.Width = width + std::abs(offsetX), 
-            glyphRect.Height = height + std::abs(offsetY);
+            //todo: BDF format documentation is lacking, after incorrectly trying to implement glyph offsets several times I've decided to cut them out
 
             if (glyphRect.Width > result.MaxWidth)
                 result.MaxWidth = glyphRect.Width;
 
             if (glyphRect.Height > result.MaxHeight)
                 result.MaxHeight = glyphRect.Height;
-
-            get<2>(glyphRect.Data) = std::max(-offsetX, 0);
-            get<3>(glyphRect.Data) = std::max(-offsetY, 0);
         }
 
         //glyph's bitmap
@@ -241,7 +219,7 @@ Ogl::BitmapFont Ogl::LoadBdfFont(std::filesystem::path path)
             {
                 firstGlyph = false;
             }
-            else 
+            else
             {
                 result.EncodingRanges.push_back({ rangeStartCodepoint, prevCodepoint, rangeStartIndex });
             }
@@ -252,14 +230,11 @@ Ogl::BitmapFont Ogl::LoadBdfFont(std::filesystem::path path)
 
         prevCodepoint = currentCodepoint;
 
-        ZeroAtlas(rect.X, rect.Y, rect.Width, rect.Height); //to avoid random garbage on edges of glyphs with non-zero offsets
         file.seekg(get<1>(rect.Data)); //going to the start of the bitmap
 
         unsigned char buffer[IMAGE_CHANNELS * 4]; //4 cause we're writing up to 4 pixels per hexadecimal digit
-        int offsetX = get<2>(rect.Data);
-        int offsetY = get<3>(rect.Data);
 
-        for (int y = rect.Height - offsetY - 1; y > 0; y--)
+        for (int y = rect.Height; y > 0; y--)
         {
             std::getline(file, line);
 
@@ -271,7 +246,7 @@ Ogl::BitmapFont Ogl::LoadBdfFont(std::filesystem::path path)
 
                 unsigned char value = character < '9' ? character - '0' : character - 'A' + 10; //hexadecimal digit to 4 bit value
 
-                int pixels = rect.Width - offsetX - x * 4;
+                int pixels = rect.Width - x * 4;
                 pixels = std::max(std::min(pixels, 4), 0); //how much pixels we have to actually write
 
                 for (int i = 0; i < pixels; i++)
@@ -280,7 +255,7 @@ Ogl::BitmapFont Ogl::LoadBdfFont(std::filesystem::path path)
                 }
 
                 if (pixels != 0)
-                    WriteToAtlas(buffer, rect.X + offsetX + x * 4, y, pixels, 1);
+                    WriteToAtlas(buffer, rect.X + x * 4, rect.Y + y - 1, pixels, 1);
             }
         }
 
@@ -295,7 +270,8 @@ Ogl::BitmapFont Ogl::LoadBdfFont(std::filesystem::path path)
     AtlasPacker.Rects.clear();
     UpdateTextureData();
 
-    return result;
+    Fonts.push_back(result);
+    return Fonts.back();
 }
 
 //loads all the textures from the specified path (recursively)
@@ -333,7 +309,7 @@ Ogl::Texture Ogl::ResolveTexture(std::filesystem::path path)
 }
 
 //finds font by path if it's already loaded/loads it if not
-Ogl::BitmapFont Ogl::ResolveFont(std::filesystem::path path)
+Ogl::BitmapFont& Ogl::ResolveFont(std::filesystem::path path)
 {
     if (std::filesystem::exists(path))
     {
@@ -345,4 +321,11 @@ Ogl::BitmapFont Ogl::ResolveFont(std::filesystem::path path)
     }
 
     return LoadBdfFont(path);
+}
+
+//writes atlas as a .bmp image (for debugging purpouses)
+void Ogl::SaveAtlas(std::filesystem::path path)
+{
+    stbi_flip_vertically_on_write(true);
+    stbi_write_bmp(path.string().c_str(), Ogl::AtlasWidth, Ogl::AtlasHeight, 4, Ogl::AtlasData);
 }

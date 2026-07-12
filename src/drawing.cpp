@@ -1,5 +1,5 @@
 #include <codecvt>
-#include <ogl.hpp>
+#include "ogl/ogl.hpp"
 
 //drawing methods
 
@@ -25,14 +25,14 @@ void Ogl::Layer::WriteVertexData(const Vec2* coords, const Vec2* texCoords, cons
         *reinterpret_cast<float*>(data + VERT_SIZE * i + 1 * sizeof(float)) = coords[i].Y;
 
         //texture coordinates - xy
-        *reinterpret_cast<float*>(data + VERT_SIZE * i + 2 * sizeof(float)) = texCoords == NULL ? 0 : texCoords[i].X;
-        *reinterpret_cast<float*>(data + VERT_SIZE * i + 3 * sizeof(float)) = texCoords == NULL ? 0 : texCoords[i].Y;
+        *reinterpret_cast<float*>(data + VERT_SIZE * i + 2 * sizeof(float)) = texCoords == nullptr ? 0 : texCoords[i].X;
+        *reinterpret_cast<float*>(data + VERT_SIZE * i + 3 * sizeof(float)) = texCoords == nullptr ? 0 : texCoords[i].Y;
 
         //texture index
         *reinterpret_cast<unsigned int*>(data + VERT_SIZE * i + 4 * sizeof(float)) = texture.Index;
 
         //modulate color
-        *reinterpret_cast<unsigned int*>(data + VERT_SIZE * i + 4 * sizeof(float) + sizeof(unsigned int)) = colors == NULL ? 0 : colors[i].Uint;
+        *reinterpret_cast<unsigned int*>(data + VERT_SIZE * i + 4 * sizeof(float) + sizeof(unsigned int)) = colors == nullptr ? 0 : colors[i].Uint;
     }
 
     RenderingDataUsed += count * VERT_SIZE;
@@ -173,7 +173,7 @@ void Ogl::Layer::DrawText(Vec2 pos, std::string text, float scale, BitmapFont& f
         }
 
         if (index == -1)
-            throw std::runtime_error("Character unsupported by font.");
+            throw std::runtime_error("Character not supported by font.");
 
         Texture characterTexture = Textures[index];
         TextureDimensions dimensions = Ogl::TextureDimensionsVector[characterTexture.Index];
@@ -210,5 +210,5 @@ void Ogl::Layer::DrawLine(Vec2 a, Vec2 b, Color color)
     const Vec2 coords[2] = { a, b };
     const Color colors[2] = { color, color };
 
-    WriteVertexData(coords, NULL, colors, {}, 2);
+    WriteVertexData(coords, nullptr, colors, {}, 2);
 }

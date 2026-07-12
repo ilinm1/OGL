@@ -1,21 +1,18 @@
 #include <cstddef>
 #include <cstdlib>
-
 #include <iostream>
 #include <format>
 #include <algorithm>
 #include <vector>
-
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
+#include "glad/glad.h"
+#include "GLFW/glfw3.h"
 #define STBI_FAILURE_USERMSG
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include <stb_image.h>
-#include <stb_image_write.h>
-
-#include <ogl.hpp>
-#include <shaders.hpp>
+#include "stb_image.h"
+#include "stb_image_write.h"
+#include "ogl/ogl.hpp"
+#include "shaders.hpp"
 
 void Ogl::Log(std::string msg)
 {
@@ -62,22 +59,26 @@ void GlfwFramebufferSizeCallback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
     Ogl::UpdateNDCToPixelMatrix(width, height);
-    Ogl::Invoke<Ogl::WindowResizeEvent>({ width, height });
+    Ogl::WindowResizeEvent ev = { width, height };
+    Ogl::Invoke<Ogl::WindowResizeEvent>(ev);
 }
 
 void GlfwKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-    Ogl::Invoke<Ogl::KeyPressEvent>({ key, scancode, action, mods });
+    Ogl::KeyPressEvent ev = { key, scancode, action, mods };
+    Ogl::Invoke<Ogl::KeyPressEvent>(ev);
 }
 
 void GlfwCharCallback(GLFWwindow* window, unsigned int codepoint)
 {
-    Ogl::Invoke<Ogl::CharacterEvent>({ .Codepoint = codepoint });
+    Ogl::CharacterEvent ev = { .Codepoint = codepoint };
+    Ogl::Invoke<Ogl::CharacterEvent>(ev);
 }
 
 void GlfwMouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 {
-    Ogl::Invoke<Ogl::MousePressEvent>({ button, action, mods });
+    Ogl::MousePressEvent ev = { button, action, mods };
+    Ogl::Invoke<Ogl::MousePressEvent>(ev);
 }
 
 void GlfwScrollCallback(GLFWwindow* window, double offsetX, double offsetY)
@@ -125,7 +126,6 @@ void Ogl::RemoveLayer(Layer* layerPtr)
     }
 
     Layers.erase(std::find(Layers.begin(), Layers.end(), layerPtr));
-    delete layerPtr;
 }
 
 void Ogl::ClearLayers()
@@ -170,7 +170,7 @@ void Ogl::SetWindowFullscreen(bool fullscreen)
 {
     int width, height;
     glfwGetWindowSize(Window, &width, &height);
-    glfwSetWindowMonitor(Window, fullscreen ? glfwGetPrimaryMonitor() : NULL, 0, 0, width, height, GLFW_DONT_CARE);
+    glfwSetWindowMonitor(Window, fullscreen ? glfwGetPrimaryMonitor() : nullptr, 0, 0, width, height, GLFW_DONT_CARE);
 }
 
 void Ogl::SetWindowName(std::string name)
@@ -194,8 +194,8 @@ void Ogl::Initialize(int windowWidth, int windowHeight, std::string windowName, 
     glfwSetErrorCallback(GlfwErrorCallback);
     #endif
 
-    Window = glfwCreateWindow(windowWidth, windowHeight, windowName.c_str(), fullscreen ? glfwGetPrimaryMonitor() : NULL, NULL);
-    if (Window == NULL)
+    Window = glfwCreateWindow(windowWidth, windowHeight, windowName.c_str(), fullscreen ? glfwGetPrimaryMonitor() : nullptr, nullptr);
+    if (Window == nullptr)
         throw std::runtime_error("Failed to create GLFW window.");
     glfwMakeContextCurrent(Window);
 
@@ -254,7 +254,7 @@ void Ogl::Initialize(int windowWidth, int windowHeight, std::string windowName, 
     //!! shader compilation !!
 
     unsigned int vertShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertShader, 1, &VertexShaderSource, NULL);
+    glShaderSource(vertShader, 1, &VertexShaderSource, nullptr);
     glCompileShader(vertShader);
 
     int success;
@@ -262,18 +262,18 @@ void Ogl::Initialize(int windowWidth, int windowHeight, std::string windowName, 
     glGetShaderiv(vertShader, GL_COMPILE_STATUS, &success);
     if (!success)
     {
-        glGetShaderInfoLog(vertShader, 256, NULL, msg);
+        glGetShaderInfoLog(vertShader, 256, nullptr, msg);
         throw std::runtime_error(std::format("Error while compiling the vertex shader: '{}'.", msg));
     }
 
     unsigned int fragShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragShader, 1, &FragmentShaderSource, NULL);
+    glShaderSource(fragShader, 1, &FragmentShaderSource, nullptr);
     glCompileShader(fragShader);
 
     glGetShaderiv(fragShader, GL_COMPILE_STATUS, &success);
     if (!success)
     {
-        glGetShaderInfoLog(fragShader, 256, NULL, msg);
+        glGetShaderInfoLog(fragShader, 256, nullptr, msg);
         throw std::runtime_error(std::format("Error while compiling the fragment shader: '{}'.", msg));
     }
 
@@ -286,7 +286,7 @@ void Ogl::Initialize(int windowWidth, int windowHeight, std::string windowName, 
     glGetProgramiv(shaders, GL_LINK_STATUS, &success);
     if(!success)
     {
-        glGetProgramInfoLog(shaders, 256, NULL, msg);
+        glGetProgramInfoLog(shaders, 256, nullptr, msg);
         throw std::runtime_error(std::format("Error while linking shaders: '{}'.", msg));
     }
     glDeleteShader(vertShader);
