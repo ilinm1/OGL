@@ -11,15 +11,9 @@ namespace Ogl
 
         Vec2() {};
 
-        Vec2(float xy)
-        {
-            X = Y = xy;
-        }
+        Vec2(float xy) : X(xy), Y(xy) {}
 
-        Vec2(float x, float y)
-        {
-            X = x; Y = y;
-        }
+        Vec2(float x, float y) : X(x), Y(y) {}
 
         //returns vector with maximal component values of both input vectors
         static Vec2 Max(Vec2 a, Vec2 b)

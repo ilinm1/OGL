@@ -11,13 +11,21 @@ namespace Ogl
         int Priority; //handlers with higher priority will be called first
         void* Data;
 
-        friend bool operator==(const Subscription<T>& l, const Subscription<T>& r)
+        bool operator==(const Subscription<T>& x) const
         {
-            return l.Handler == r.Handler && l.Data == r.Data;
+            return Priority == x.Priority && Handler == x.Handler && Data == x.Data;
         }
 
         bool operator>(const Subscription<T>& x) const
         {
+            if (Priority == x.Priority)
+            {
+                if (Handler == x.Handler)
+                    return Data > x.Data;
+
+                return Handler > x.Handler;
+            }
+
             return Priority > x.Priority;
         }
     };
@@ -50,7 +58,11 @@ namespace Ogl
     template <class T>
     const Subscription<T>& Subscribe(EventHandler<T> handler, void* data = nullptr, int priority = 0)
     {
-        const Subscription<T>& sub = *(GetSubscriptions<T>().insert({ handler, priority, data }).first);
+        auto pair = GetSubscriptions<T>().insert({ handler, priority, data });
+        if (!pair.second)
+            throw std::runtime_error("Failed to insert new subscription, maybe an identical one already exists.");
+
+        const Subscription<T>& sub = *pair.first;
         return sub;
     }
 

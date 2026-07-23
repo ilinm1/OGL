@@ -146,13 +146,15 @@ void Ogl::Layer::DrawRect(Vec2 a, Vec2 b, Color color, Texture texture, bool mat
 //'color' is modulate color (alpha can be set to zero to ignore it)
 //if 'multiline' is set then new line will be created after reading newline
 //if 'bounded' is set then text area will be limited by the 'maxWidth' & 'maxHeight' parameters (in NDC/in-world meters)
-void Ogl::Layer::DrawText(Vec2 pos, std::string text, float scale, BitmapFont& font, Color color, bool matchResolution, bool multiline, bool bounded, float maxWidth, float maxHeight)
+//returns vector of drawn glyph positions (their bottom left corners)
+std::vector<Ogl::Vec2> Ogl::Layer::DrawText(Vec2 pos, std::string text, float scale, BitmapFont& font, Color color, bool matchResolution, bool multiline, bool bounded, float maxWidth, float maxHeight)
 {
     static std::wstring_convert<std::codecvt_utf8<unsigned int>, unsigned int> utf8converter;
     std::basic_string<unsigned int> textUtf32 = utf8converter.from_bytes(text);
     float lineHeight = (matchResolution ? Ogl::SizeFromPixels(Vec2(font.MaxHeight), IsWorldSpace).X : 1.0f) * scale;
-    Vec2 currentPos = pos;
 
+    std::vector<Vec2> glyphPositions;
+    Vec2 currentPos = pos;
     for (unsigned int codepoint : textUtf32)
     {
         if (codepoint == '\n')
@@ -196,12 +198,15 @@ void Ogl::Layer::DrawText(Vec2 pos, std::string text, float scale, BitmapFont& f
         }
 
         DrawRect(currentPos, upperRightPoint, color, characterTexture);
+        glyphPositions.push_back(currentPos);
         currentPos.X = upperRightPoint.X;
     }
 
     Vec2 topLeft = Vec2(pos.X, pos.Y - font.MaxHeight * scale);
     AabbMax = Vec2::Max(AabbMax, Vec2::Max(topLeft, currentPos));
     AabbMin = Vec2::Min(AabbMin, Vec2::Min(topLeft, currentPos));
+
+    return glyphPositions;
 }
 
 //FOR LAYERS USING "GL_LINES" PRIMITIVE

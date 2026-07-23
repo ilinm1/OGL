@@ -105,7 +105,7 @@ namespace Ogl
     struct BitmapFont
     {
         std::filesystem::path Path;
-        unsigned int MaxWidth;
+        unsigned int MaxWidth; //in pixels
         unsigned int MaxHeight;
 
         size_t GlyphCount = 0;
@@ -131,10 +131,9 @@ namespace Ogl
         size_t RenderingDataUsed = 0;
         char* RenderingData = nullptr;
 
-        Layer(size_t renderingDataSize = 256)
+        Layer(size_t renderingDataSize = 256) : RenderingDataSize(renderingDataSize)
         {
             RenderingData = new char[renderingDataSize];
-            RenderingDataSize = renderingDataSize;
         }
 
         //each draw call generates new primitives to be drawn, replacing the old ones; if no new ones were generated the old ones will be drawn
@@ -148,7 +147,7 @@ namespace Ogl
         void WriteVertexData(const Vec2* coords, const Vec2* texCoords, const Color* colors, Texture texture, size_t count);
         void DrawTriangle(Vec2 a, Vec2 b, Vec2 c, Color color = COLOR_TRANSPARENT, Texture texture = Texture{}, bool matchResolution = false);
         void DrawRect(Vec2 a, Vec2 b, Color color = COLOR_TRANSPARENT, Texture texture = Texture {}, bool matchResolution = false, bool mirrorX = false, bool mirrorY = false, bool swapXY = false);
-        void DrawText(Vec2 pos, std::string text, float scale, BitmapFont& font, Color color = COLOR_TRANSPARENT, bool matchResolution = false, bool multiline = true, bool bounded = false, float maxWidth = 0.0f, float maxHeight = 0.0f);
+        std::vector<Vec2> DrawText(Vec2 pos, std::string text, float scale, BitmapFont& font, Color color = COLOR_TRANSPARENT, bool matchResolution = false, bool multiline = true, bool bounded = false, float maxWidth = 0.0f, float maxHeight = 0.0f);
         void DrawLine(Vec2 a, Vec2 b, Color color);
     };
 
