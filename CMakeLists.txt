@@ -34,3 +34,6 @@ target_link_libraries(test_sierpinski ogl)
 
 add_executable(test_image_viewer tests/image_viewer.cpp)
 target_link_libraries(test_image_viewer ogl)
+
+add_executable(test_calculator tests/calculator.cpp)
+target_link_libraries(test_calculator ogl)

@@ -107,7 +107,7 @@ namespace Ogl::Widgets
 
             widget->BaseColor = widget->Pressed ? widget->PressedColor : widget->DefaultColor;
             widget->TextColor = widget->Pressed ? widget->PressedTextColor : widget->DefaultTextColor;
-            return widget->Pressed;
+            return false;
         }
     };
 
@@ -187,7 +187,7 @@ namespace Ogl::Widgets
                 widget->InFocus = true;
                 widget->CursorPosition = widget->GetIndex(mousePos);
                 widget->CursorVisible = true;
-                return true;
+                return false;
             }
 
             widget->InFocus = false;
