@@ -22,6 +22,8 @@ namespace Ogl
 		std::vector<Rect> Rects; //new rects to be packed should be put here
 		std::vector<Rect> PackedRects; //all the rects that have been packed are here
 		std::vector<std::tuple<unsigned int, unsigned int, unsigned int>> VerticalLevels = {}; //pieces of free space where rects can be placed; first two values are it's x/y coordinates, third value is it's width
+		unsigned int MaxWidth = 0;
+		unsigned int MaxHeight = 0;
 		unsigned int TotalWidth = 0;
 		unsigned int TotalHeight = 0;
 
@@ -40,6 +42,9 @@ namespace Ogl
 				for (int i = 0; i < VerticalLevels.size(); i++) //going through the vertical levels trying to minimize difference in packing space area
 				{
 					auto [x, y, width] = VerticalLevels[i];
+
+					if (x + rect.Width > MaxWidth || y + rect.Height > MaxHeight) //out of bounds
+						continue;
 
 					if (width < rect.Width) //level is too narrow
 						continue;

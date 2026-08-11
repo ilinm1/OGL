@@ -302,11 +302,16 @@ void Ogl::Initialize(int windowWidth, int windowHeight, std::string windowName, 
     //enable blending
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    //querying max texture size
+    int maxTexSize;
+    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTexSize);
+    AtlasPacker.MaxWidth = AtlasPacker.MaxHeight = maxTexSize / 2;
 }
 
 void Ogl::UpdateLoop()
 {
-    while (!glfwWindowShouldClose(Window)) 
+    while (!glfwWindowShouldClose(Window))
     {
         glClear(GL_COLOR_BUFFER_BIT);
 

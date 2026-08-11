@@ -238,7 +238,7 @@ Ogl::BitmapFont& Ogl::LoadBdfFont(std::filesystem::path path)
         {
             std::getline(file, line);
 
-            for (int x = 0; x < line.length(); x++)
+            for (int x = 0; x < line.size(); x++)
             {
                 char character = line[x];
                 if (character < '0') //ignoring whitespaces
