@@ -5,18 +5,18 @@
 
 struct SierpinskiLayer : Ogl::Layer
 {
-    int Iter = 1;
     const int MaxIter = 10;
-    float Size = 1.0f;
+    const float InitialTriangleSize = 1.8f;
+    const Ogl::Vec2 InitialTrianglePosition = Ogl::Vec2(-0.9f);
     const int DelayMs = 500;
-    std::vector<Ogl::Vec2> Triangles = { Ogl::Vec2(-0.5f) };
+
+    int Iter = 1;
+    float Size = InitialTriangleSize;
+    std::vector<Ogl::Vec2> Triangles = { InitialTrianglePosition };
     int ColorIndex = 0;
     Ogl::Color Pallete[6] = { Ogl::Color(255, 255, 255), Ogl::Color(255, 0, 0), Ogl::Color(0, 255, 0), Ogl::Color(0, 0, 255), Ogl::Color(255, 255, 0), Ogl::Color(255, 0, 255) };
 
-    SierpinskiLayer()
-    {
-        IsWorldSpace = true;
-    }
+    SierpinskiLayer() {}
 
     Ogl::Color GetColor()
     {
@@ -36,8 +36,8 @@ struct SierpinskiLayer : Ogl::Layer
         if (Iter++ == MaxIter)
         {
             Iter = 1;
-            Size = 1.0f;
-            Triangles = { Ogl::Vec2(-0.5f) };
+            Size = InitialTriangleSize;
+            Triangles = { InitialTrianglePosition };
             return;
         }
 
@@ -55,7 +55,6 @@ struct SierpinskiLayer : Ogl::Layer
 int main()
 {
     Ogl::Initialize(500, 500, "Sierpinski triangle", false);
-    Ogl::SetCameraSize(Ogl::Vec2(1.1f));
 
     SierpinskiLayer sierpinskiLayer = {};
     Ogl::AddLayer(&sierpinskiLayer);

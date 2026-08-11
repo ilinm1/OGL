@@ -151,11 +151,19 @@ std::vector<Ogl::Vec2> Ogl::Layer::DrawText(Vec2 pos, std::string text, float sc
 {
     static std::wstring_convert<std::codecvt_utf8<unsigned int>, unsigned int> utf8converter;
     std::basic_string<unsigned int> textUtf32 = utf8converter.from_bytes(text);
-    float lineHeight = (matchResolution ? Ogl::SizeFromPixels(Vec2(font.MaxHeight), IsWorldSpace).X : 1.0f) * scale;
+    return DrawText(pos, textUtf32, scale, font, color, matchResolution, multiline, bounded, maxWidth, maxHeight);
+}
 
+//expects an utf32 string
+std::vector<Ogl::Vec2> Ogl::Layer::DrawText(Vec2 pos, std::basic_string<unsigned int> text, float scale, BitmapFont& font, Color color, bool matchResolution, bool multiline, bool bounded, float maxWidth, float maxHeight)
+{
+    if (!text.empty() && !font.IsValid())
+        throw std::runtime_error("Invalid font.");
+
+    float lineHeight = (matchResolution ? Ogl::SizeFromPixels(Vec2(font.MaxHeight), IsWorldSpace).X : 1.0f) * scale;
     std::vector<Vec2> glyphPositions;
     Vec2 currentPos = pos;
-    for (unsigned int codepoint : textUtf32)
+    for (unsigned int codepoint : text)
     {
         if (codepoint == '\n')
         {
@@ -163,7 +171,7 @@ std::vector<Ogl::Vec2> Ogl::Layer::DrawText(Vec2 pos, std::string text, float sc
             currentPos.Y -= lineHeight;
             continue;
         }
-        
+
         size_t index = -1;
         for (auto& [startCodepoint, endCodepoint, startIndex] : font.EncodingRanges)
         {
@@ -179,7 +187,7 @@ std::vector<Ogl::Vec2> Ogl::Layer::DrawText(Vec2 pos, std::string text, float sc
 
         Texture characterTexture = Textures[index];
         TextureDimensions dimensions = Ogl::TextureDimensionsVector[characterTexture.Index];
-        Vec2 characterSize = (matchResolution ? 
+        Vec2 characterSize = (matchResolution ?
             Ogl::SizeFromPixels(Vec2(dimensions.Width, dimensions.Height), IsWorldSpace) :
             Vec2(static_cast<float>(dimensions.Width) / dimensions.Height, 1.0f)) * scale;
         Vec2 upperRightPoint = currentPos + characterSize;

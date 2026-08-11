@@ -9,12 +9,9 @@ struct TextLayer : Ogl::Layer
     std::string Text = "Use arrows to move the camera.\nScroll to zoom in/out.\nYou can use enter, backspace and paste with ctrl + V.\n:)";
     std::wstring_convert<std::codecvt_utf8<unsigned int>, unsigned int> Utf32Converter;
 
-    TextLayer()
+    TextLayer() : Ogl::Layer(true, GL_TRIANGLES), Font(Ogl::ResolveFont("test.bdf"))
     {
-        IsWorldSpace = true;
         Redraw = true;
-
-        Font = Ogl::ResolveFont("test.bdf");
 
         Subscribe<Ogl::WindowResizeEvent>(&OnWindowResize);
         Subscribe<Ogl::KeyPressEvent>(&OnKeyPress);

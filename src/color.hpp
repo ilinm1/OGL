@@ -101,4 +101,8 @@ namespace Ogl
     #define COLOR_TRANSPARENT Ogl::Color {}
     #define COLOR_WHITE Ogl::Color(255, 255, 255)
     #define COLOR_BLACK Ogl::Color(0, 0, 0)
+    #define COLOR_GREY Ogl::Color(128, 128, 128)
+    #define COLOR_RED Ogl::Color(255, 0, 0)
+    #define COLOR_GREEN Ogl::Color(0, 255, 0)
+    #define COLOR_BLUE Ogl::Color(0, 0, 255)
 }

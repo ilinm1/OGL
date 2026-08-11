@@ -75,7 +75,7 @@ bool Ogl::OpenFilePicker(std::string title, bool write, std::filesystem::path& p
     return false;
 }
 #else
-std::filesystem::path OpenFilePicker()
+std::filesystem::path OpenFilePicker(std::string title, bool write, std::filesystem::path& path)
 {
     throw std::runtime_error("Not implemented for your OS.");
 }

@@ -27,8 +27,6 @@ namespace Ogl::Widgets
 
         std::vector<Vec2> GlyphPositions;
 
-        TextField() {}
-
         //'scale' sets line height if text is multiline, otherwise it's equal to field's height
         //if 'multiline' is set line can be split by newline characters
         TextField(
@@ -37,17 +35,26 @@ namespace Ogl::Widgets
             std::string text,
             BitmapFont font,
             float scale,
-            bool centerText,
-            bool multiline,
-            Texture texture,
-            Color color,
-            Color textColor) : Widget(position, dimensions), Text(text), Font(font), CenterText(centerText), Multiline(multiline), TextScale(scale),
-                BaseTexture(texture), BaseColor(color), TextColor(textColor)
+            bool centerText = true,
+            bool multiline = false,
+            Texture texture = Ogl::Texture{},
+            Color color = COLOR_WHITE,
+            Color textColor = COLOR_BLACK) :
+            Widget(position, dimensions),
+            Text(text),
+            Font(font),
+            CenterText(centerText),
+            Multiline(multiline),
+            TextScale(scale),
+            BaseTexture(texture),
+            BaseColor(color),
+            TextColor(textColor)
         {}
 
         void Draw() override
         {
-            Vec2 centerPosition = Vec2(Position.X + (Dimensions.X - Ogl::SizeFromPixels(Font.MaxWidth, Parent->IsWorldSpace) * Text.length()).X / 2, Position.Y);
+            float maxGlyphWidth = static_cast<float>(Font.MaxWidth) / Font.MaxHeight * (Multiline ? TextScale : Dimensions.Y);
+            Vec2 centerPosition = Vec2(Position.X + (Dimensions.X - maxGlyphWidth * Text.length()) / 2, Position.Y);
             Parent->DrawRect(Position, Position + Dimensions, BaseColor, BaseTexture);
             GlyphPositions = Parent->DrawText(
                 CenterText ? centerPosition : Position,
@@ -73,11 +80,6 @@ namespace Ogl::Widgets
         EventHandler<MousePressEvent> Handler; //return value of the handler tells if the button is currently pressed
         bool Pressed = false;
 
-        Button()
-        {
-            Subscribe<MousePressEvent>(OnMousePress);
-        }
-
         //'handler' is called when button is pressed and should return whether the press had actually occured to update button's appearance
         Button(
             Vec2 position,
@@ -87,7 +89,7 @@ namespace Ogl::Widgets
             BitmapFont font,
             Color color = COLOR_WHITE,
             Color textColor = COLOR_BLACK,
-            Color pressedColor = COLOR_WHITE,
+            Color pressedColor = COLOR_GREY,
             Color pressedTextColor = COLOR_BLACK,
             Texture texture = Texture{},
             bool centerText = true) : TextField(position, dimensions, text, font, 1.0f, centerText, false, texture, color, textColor),
@@ -99,8 +101,10 @@ namespace Ogl::Widgets
         static bool OnMousePress(MousePressEvent& ev, void* data)
         {
             Button* widget = reinterpret_cast<Button*>(data);
-            Vec2 mousePos = Ogl::PointFromPixels(Ogl::GetCursorPos(), widget->Parent->IsWorldSpace);
+            if (widget->Parent == nullptr)
+                return false;
 
+            Vec2 mousePos = Ogl::PointFromPixels(Ogl::GetCursorPos(), widget->Parent->IsWorldSpace);
             widget->Pressed = false;
             if (ev.Action == GLFW_PRESS && IsPointInBox(mousePos, widget->Position, widget->Position + widget->Dimensions))
                 widget->Pressed = widget->Handler(ev, data);
@@ -113,6 +117,13 @@ namespace Ogl::Widgets
 
     struct InputField : TextField
     {
+        std::basic_string<unsigned int> Input;
+        std::string Hint;
+        static std::wstring_convert<std::codecvt_utf8<unsigned int>, unsigned int> Utf32Converter;
+
+        Ogl::Color DefaultTextColor;
+        Ogl::Color HintTextColor;
+
         unsigned int CursorPosition;
         float CursorBlinkPeriod; //in seconds
         std::chrono::time_point<std::chrono::steady_clock> LastBlink;
@@ -120,49 +131,74 @@ namespace Ogl::Widgets
         bool InFocus;
         bool CursorVisible;
 
-        InputField() : CursorPosition(0), LastBlink(), InFocus(false), CursorVisible(false)
+        //'hint' is displayed when nothing is entered
+        //'scale' sets line height if text is multiline, otherwise it's equal to field's height
+        //'blinkPeriod' specifies how often should cursor blink while field is in focus (in seconds)
+        InputField(Vec2 position,
+                   Vec2 dimensions,
+                   std::string text,
+                   std::string hint,
+                   BitmapFont font,
+                   float scale = 0.0f,
+                   bool multiline = false,
+                   Texture texture = Ogl::Texture{},
+                   Color color = COLOR_WHITE,
+                   Color textColor = COLOR_BLACK,
+                   Color hintColor = COLOR_GREY,
+                   float blinkPeriod = 0.5f) : 
+            TextField(position, dimensions, text.empty() ? hint : text, font, scale, false, multiline, texture, color, text.empty() ? hintColor : textColor),
+            CursorPosition(0),
+            CursorBlinkPeriod(blinkPeriod),
+            LastBlink(),
+            Input(Utf32Converter.from_bytes(text)),
+            Hint(hint),
+            DefaultTextColor(textColor),
+            HintTextColor(hintColor),
+            InFocus(false),
+            CursorVisible(false)
         {
             Subscribe<MousePressEvent>(OnMousePress);
             Subscribe<CharacterEvent>(OnCharacterReceived);
             Subscribe<KeyPressEvent>(OnKeyPress);
         }
 
-        //'scale' sets line height if text is multiline, otherwise it's equal to field's height
-        //'blinkPeriod' specifies how often should cursor blink while field is in focus
-        InputField(Vec2 position,
-                   Vec2 dimensions,
-                   std::string text,
-                   BitmapFont font,
-                   float scale,
-                   bool multiline,
-                   Texture texture,
-                   Color color,
-                   Color textColor,
-                   float blinkPeriod) : TextField(position, dimensions, text, font, scale, false, multiline, texture, color, textColor),
-            CursorPosition(0), CursorBlinkPeriod(blinkPeriod), LastBlink(), InFocus(false), CursorVisible(false)
+        void UpdateText()
         {
-            Subscribe<MousePressEvent>(OnMousePress);
-            Subscribe<CharacterEvent>(OnCharacterReceived);
-            Subscribe<KeyPressEvent>(OnKeyPress);
+            if (Input.empty())
+            {
+                Text = Hint;
+                TextColor = HintTextColor;
+            }
+            else
+            {
+                Text = Utf32Converter.to_bytes(Input);
+                TextColor = DefaultTextColor;
+            }
         }
 
         //returns position of character with a given index (it's bottom left corner)
         Vec2 GetOffset(unsigned int index)
         {
-            if (!GlyphPositions.size())
+            if (Input.empty())
                 return Position;
 
             if (index > GlyphPositions.size() - 1)
-                return GlyphPositions.back() + Vec2(SizeFromPixels(Vec2(Font.MaxWidth), Parent->IsWorldSpace).X, 0);
+            {
+                float maxGlyphWidth = static_cast<float>(Font.MaxWidth) / Font.MaxHeight * (Multiline ? TextScale : Dimensions.Y);
+                return GlyphPositions.back() + Vec2(maxGlyphWidth, 0);
+            }
 
             return GlyphPositions[index];
         }
 
-        //returns string index for a given position (may be greater than last character index)
+        //returns input string index for a given position (may be greater than last character index)
         unsigned int GetIndex(Vec2 offset)
         {
+            if (Input.empty())
+                return 0;
+
             float lineHeight = Multiline ? TextScale : Dimensions.Y;
-            float maxGlyphWidth = SizeFromPixels(Vec2(Font.MaxWidth), Parent->IsWorldSpace).X;
+            float maxGlyphWidth = static_cast<float>(Font.MaxWidth) / Font.MaxHeight * lineHeight;
 
             for (unsigned int i = 0; i < GlyphPositions.size(); i++)
             {
@@ -171,17 +207,20 @@ namespace Ogl::Widgets
                     return i;
             }
 
-            return GlyphPositions.size();
+            return Input.size();
         }
 
         static bool OnMousePress(MousePressEvent& ev, void* data)
         {
             InputField* widget = reinterpret_cast<InputField*>(data);
-            Vec2 mousePos = Ogl::PointFromPixels(Ogl::GetCursorPos(), widget->Parent->IsWorldSpace);
+
+            if (widget->Parent == nullptr)
+                return false;
 
             if (ev.Action != GLFW_PRESS)
                 return false;
 
+            Vec2 mousePos = Ogl::PointFromPixels(Ogl::GetCursorPos(), widget->Parent->IsWorldSpace);
             if (IsPointInBox(mousePos, widget->Position, widget->Position + widget->Dimensions))
             {
                 widget->InFocus = true;
@@ -197,12 +236,15 @@ namespace Ogl::Widgets
         static bool OnCharacterReceived(CharacterEvent& ev, void* data)
         {
             InputField* widget = reinterpret_cast<InputField*>(data);
-            static std::wstring_convert<std::codecvt_utf8<unsigned int>, unsigned int> Utf32Converter;
+
+            if (widget->Parent == nullptr)
+                return false;
 
             if (!widget->InFocus)
                 return false;
 
-            widget->Text.insert(widget->CursorPosition++, Utf32Converter.to_bytes(&ev.Codepoint, &ev.Codepoint + 1));
+            widget->Input.insert(widget->CursorPosition++, 1, ev.Codepoint);
+            widget->UpdateText();
             return true;
         }
 
@@ -210,46 +252,51 @@ namespace Ogl::Widgets
         {
             InputField* widget = reinterpret_cast<InputField*>(data);
 
+            if (widget->Parent == nullptr)
+                return false;
+
             if (!widget->InFocus || ev.Action == GLFW_RELEASE)
                 return false;
 
+            bool handled = false;
+
             if (ev.Key == GLFW_KEY_ENTER && widget->Multiline)
             {
-                widget->Text.insert(widget->CursorPosition, "\n");
-                widget->CursorPosition++;
-                return true;
+                widget->Input.insert(widget->CursorPosition++, 1, '\n');
+                handled = true;
             }
 
             if (ev.Key == GLFW_KEY_V && ev.Modifiers & GLFW_MOD_CONTROL)
             {
-                std::string cb = Ogl::GetClipboardContents();
-                widget->Text.insert(widget->CursorPosition, cb);
-                widget->CursorPosition += cb.length();
-                return true;
+                std::basic_string<unsigned int> cb = widget->Utf32Converter.from_bytes(Ogl::GetClipboardContents());
+                widget->Input.insert(widget->CursorPosition, cb);
+                widget->CursorPosition += cb.size();
+                handled = true;
             }
 
-            if (ev.Key == GLFW_KEY_BACKSPACE && widget->Text.length() > 0 && widget->CursorPosition > 0)
+            if (ev.Key == GLFW_KEY_BACKSPACE && widget->Input.length() > 0 && widget->CursorPosition > 0)
             {
-                widget->Text.erase(widget->CursorPosition - 1, 1);
+                widget->Input.erase(widget->CursorPosition - 1, 1);
                 widget->CursorPosition--;
-                return true;
+                handled = true;
             }
 
             if (ev.Key == GLFW_KEY_LEFT && widget->CursorPosition > 0)
             {
                 widget->CursorPosition--;
                 widget->CursorVisible = true;
-                return true;
+                handled = true;
             }
 
-            if (ev.Key == GLFW_KEY_RIGHT && widget->CursorPosition < widget->Text.length())
+            if (ev.Key == GLFW_KEY_RIGHT && widget->CursorPosition < widget->Input.length())
             {
                 widget->CursorPosition++;
                 widget->CursorVisible = true;
-                return true;
+                handled = true;
             }
 
-            return false;
+            widget->UpdateText();
+            return handled;
         }
 
         void Draw() override
@@ -266,8 +313,10 @@ namespace Ogl::Widgets
             if (InFocus && CursorVisible)
             {
                 Vec2 pos = GetOffset(CursorPosition);
-                Parent->DrawRect(pos, pos + Vec2(0.01f, Multiline ? TextScale : Dimensions.Y), TextColor);
+                Parent->DrawRect(pos, pos + Vec2(0.005f, Multiline ? TextScale : Dimensions.Y), TextColor);
             }
         }
     };
+
+    inline std::wstring_convert<std::codecvt_utf8<unsigned int>, unsigned int> InputField::Utf32Converter = {};
 }

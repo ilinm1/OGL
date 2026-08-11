@@ -8,9 +8,8 @@ struct TriangleLayer : Ogl::Layer
 {
     Ogl::Texture Texture;
 
-    TriangleLayer()
+    TriangleLayer() : Texture(Ogl::ResolveTexture("test.png"))
     {
-        Texture = Ogl::ResolveTexture("test.png");
         Redraw = true;
     }
 
@@ -41,13 +40,8 @@ struct BallLayer : Ogl::Layer
     const float BallSpeed = 1.0f;
     const float TimeStep = 0.1f;
     
-    BallLayer() : Ogl::Layer()
+    BallLayer() : Ogl::Layer(true, GL_TRIANGLES, HEIGHT_MAX), Texture(Ogl::ResolveTexture("test.png"))
     {
-        DrawingHeight = HEIGHT_MAX;
-        IsWorldSpace = true;
-
-        Texture = Ogl::ResolveTexture("test.png");
-
         std::default_random_engine engine;
         engine.seed(std::time(nullptr));
         std::uniform_real_distribution<float> distribution(0.0f, 1.0f);

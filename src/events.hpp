@@ -96,7 +96,7 @@ namespace Ogl
         Subscriber(const Subscriber& ref) = delete;
         void operator=(const Subscriber& ref) = delete;
         
-        //identical to the other 'Subscribe' method but passes layer to the handler and automatically adds an unsub callback 
+        //identical to the other 'Subscribe' method but passes subscriber pointer to the handler and automatically adds an unsub callback 
         //which will be called on layer's destruction
         template <class T>
         void Subscribe(EventHandler<T> handler, int priority)

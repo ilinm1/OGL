@@ -15,13 +15,8 @@ struct CalculatorLayer : Ogl::Widgets::WidgetLayer
 			Ogl::Vec2(-1.0f, 0.7f),
 			Ogl::Vec2(0.6f, 0.2f),
 			"2",
-			font,
-			1.0f,
-			false,
-			Ogl::Texture{},
-			COLOR_WHITE,
-			COLOR_BLACK,
-			1.0f);
+			"A",
+			font);
 		AddWidget(InputA);
 
 		AddWidget(new Ogl::Widgets::TextField(
@@ -34,20 +29,14 @@ struct CalculatorLayer : Ogl::Widgets::WidgetLayer
 			false,
 			Ogl::Texture{},
 			COLOR_TRANSPARENT,
-			COLOR_WHITE
-		));
+			COLOR_WHITE));
 
 		InputB = new Ogl::Widgets::InputField(
 			Ogl::Vec2(-0.2f, 0.7f),
 			Ogl::Vec2(0.6f, 0.2f),
 			"2",
-			font,
-			1.0f,
-			false,
-			Ogl::Texture{},
-			COLOR_WHITE,
-			COLOR_BLACK,
-			1.0f);
+			"B",
+			font);
 		AddWidget(InputB);
 
 		Output = new Ogl::Widgets::TextField(
@@ -68,11 +57,7 @@ struct CalculatorLayer : Ogl::Widgets::WidgetLayer
 			Ogl::Vec2(1.8f, 0.2f),
 			&OnCalculateButtonPress,
 			"Calculate",
-			font,
-			COLOR_WHITE,
-			COLOR_BLACK,
-			Ogl::Color(128, 128, 128),
-			COLOR_BLACK));
+			font));
 	}
 
 	~CalculatorLayer()
