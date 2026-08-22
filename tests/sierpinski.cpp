@@ -54,7 +54,7 @@ struct SierpinskiLayer : Ogl::Layer
 
 int main()
 {
-    Ogl::Initialize(500, 500, "Sierpinski triangle", false);
+    Ogl::Initialize(500, 500, "Sierpinski triangle");
 
     SierpinskiLayer sierpinskiLayer = {};
     Ogl::AddLayer(&sierpinskiLayer);

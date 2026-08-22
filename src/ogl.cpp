@@ -152,18 +152,23 @@ bool Ogl::IsLayerOutOfView(Layer* layerPtr)
 
 //window methods
 
-//gets size of the window's framebuffer in pixels
-std::tuple<int, int> Ogl::GetWindowSize()
+void Ogl::SetWindowName(std::string name)
 {
-    int width, height;
-    glfwGetFramebufferSize(Window, &width, &height);
-    return { width, height };
+    glfwSetWindowTitle(Window, name.c_str());
 }
 
 //sets size of the window's content area in screen coordinates (not pixels but pretty close)
 void Ogl::SetWindowSize(int width, int height)
 {
     glfwSetWindowSize(Window, width, height);
+}
+
+//gets size of the window's framebuffer in pixels
+std::tuple<int, int> Ogl::GetWindowSize()
+{
+    int width, height;
+    glfwGetFramebufferSize(Window, &width, &height);
+    return { width, height };
 }
 
 void Ogl::SetWindowFullscreen(bool fullscreen)
@@ -173,14 +178,9 @@ void Ogl::SetWindowFullscreen(bool fullscreen)
     glfwSetWindowMonitor(Window, fullscreen ? glfwGetPrimaryMonitor() : nullptr, 0, 0, width, height, GLFW_DONT_CARE);
 }
 
-void Ogl::SetWindowName(std::string name)
-{
-    glfwSetWindowTitle(Window, name.c_str());
-}
-
 //init, update
 
-void Ogl::Initialize(int windowWidth, int windowHeight, std::string windowName, bool fullscreen)
+void Ogl::Initialize(int windowWidth, int windowHeight, std::string windowName, bool fullscreen, bool resizable)
 {
     //!! window creation !!
 
@@ -188,6 +188,7 @@ void Ogl::Initialize(int windowWidth, int windowHeight, std::string windowName, 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_RESIZABLE, resizable);
 
     #ifdef DEBUG_OUTPUT
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, 1);

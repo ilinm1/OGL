@@ -97,7 +97,7 @@ struct BallLayer : Ogl::Layer
 
 int main()
 {
-    Ogl::Initialize(300, 300, "Ball", false);
+    Ogl::Initialize(300, 300, "Ball");
     Ogl::SetCameraSize(Ogl::Vec2(3.0f));
 
     TriangleLayer triangleLayer = {};

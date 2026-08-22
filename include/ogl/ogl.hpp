@@ -228,10 +228,10 @@ namespace Ogl
 
     //window methods
 
-    std::tuple<int, int> GetWindowSize();
-    void SetWindowSize(int width, int height);
-    void SetWindowFullscreen(bool fullscreen);
     void SetWindowName(std::string name);
+    void SetWindowSize(int width, int height);
+    std::tuple<int, int> GetWindowSize();
+    void SetWindowFullscreen(bool fullscreen);
 
     //input methods
 
@@ -274,7 +274,7 @@ namespace Ogl
 
     //init, update
 
-    void Initialize(int windowWidth, int windowHeight, std::string windowName, bool fullscreen);
+    void Initialize(int windowWidth, int windowHeight, std::string windowName = "OGL", bool fullscreen = false, bool resizable = true);
     void UpdateLoop();
 
     //globals

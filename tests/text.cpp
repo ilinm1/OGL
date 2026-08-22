@@ -95,7 +95,7 @@ struct TextLayer : Ogl::Layer
 
 int main()
 {
-    Ogl::Initialize(500, 500, "Text", false);
+    Ogl::Initialize(500, 500, "Text");
     Ogl::SetCameraSize(Ogl::Vec2(500.0f) / PixelsPerMeter);
 
     TextLayer textLayer = {};

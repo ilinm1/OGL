@@ -13,6 +13,13 @@ namespace Ogl::Widgets
         return point.X > lb.X && point.X < rt.X && point.Y > lb.Y && point.Y < rt.Y;
     }
 
+    float Clamp(float v, float min, float max)
+    {
+        v = v < min ? min : v;
+        v = v > max ? max : v;
+        return v;
+    }
+
     struct TextField : Widget
     {
         std::string Text;
@@ -37,7 +44,7 @@ namespace Ogl::Widgets
             float scale,
             bool centerText = true,
             bool multiline = false,
-            Texture texture = Ogl::Texture{},
+            Texture texture = Texture{},
             Color color = COLOR_WHITE,
             Color textColor = COLOR_BLACK) :
             Widget(position, dimensions),
@@ -101,10 +108,10 @@ namespace Ogl::Widgets
         static bool OnMousePress(MousePressEvent& ev, void* data)
         {
             Button* widget = reinterpret_cast<Button*>(data);
-            if (widget->Parent == nullptr)
+            if (!widget->Parent)
                 return false;
 
-            Vec2 mousePos = Ogl::PointFromPixels(Ogl::GetCursorPos(), widget->Parent->IsWorldSpace);
+            Vec2 mousePos = PointFromPixels(GetCursorPos(), widget->Parent->IsWorldSpace);
             widget->Pressed = false;
             if (ev.Action == GLFW_PRESS && IsPointInBox(mousePos, widget->Position, widget->Position + widget->Dimensions))
                 widget->Pressed = widget->Handler(ev, data);
@@ -121,8 +128,8 @@ namespace Ogl::Widgets
         std::string Hint;
         static std::wstring_convert<std::codecvt_utf8<unsigned int>, unsigned int> Utf32Converter;
 
-        Ogl::Color DefaultTextColor;
-        Ogl::Color HintTextColor;
+        Color DefaultTextColor;
+        Color HintTextColor;
 
         unsigned int CursorPosition;
         float CursorBlinkPeriod; //in seconds
@@ -141,7 +148,7 @@ namespace Ogl::Widgets
                    BitmapFont font,
                    float scale = 0.0f,
                    bool multiline = false,
-                   Texture texture = Ogl::Texture{},
+                   Texture texture = Texture{},
                    Color color = COLOR_WHITE,
                    Color textColor = COLOR_BLACK,
                    Color hintColor = COLOR_GREY,
@@ -220,7 +227,7 @@ namespace Ogl::Widgets
             if (ev.Action != GLFW_PRESS)
                 return false;
 
-            Vec2 mousePos = Ogl::PointFromPixels(Ogl::GetCursorPos(), widget->Parent->IsWorldSpace);
+            Vec2 mousePos = PointFromPixels(GetCursorPos(), widget->Parent->IsWorldSpace);
             if (IsPointInBox(mousePos, widget->Position, widget->Position + widget->Dimensions))
             {
                 widget->InFocus = true;
@@ -237,10 +244,7 @@ namespace Ogl::Widgets
         {
             InputField* widget = reinterpret_cast<InputField*>(data);
 
-            if (widget->Parent == nullptr)
-                return false;
-
-            if (!widget->InFocus)
+            if (!widget->Parent || !widget->InFocus)
                 return false;
 
             widget->Input.insert(widget->CursorPosition++, 1, ev.Codepoint);
@@ -252,10 +256,7 @@ namespace Ogl::Widgets
         {
             InputField* widget = reinterpret_cast<InputField*>(data);
 
-            if (widget->Parent == nullptr)
-                return false;
-
-            if (!widget->InFocus || ev.Action == GLFW_RELEASE)
+            if (!widget->Parent || !widget->InFocus || ev.Action == GLFW_RELEASE)
                 return false;
 
             bool handled = false;
@@ -268,7 +269,7 @@ namespace Ogl::Widgets
 
             if (ev.Key == GLFW_KEY_V && ev.Modifiers & GLFW_MOD_CONTROL)
             {
-                std::basic_string<unsigned int> cb = widget->Utf32Converter.from_bytes(Ogl::GetClipboardContents());
+                std::basic_string<unsigned int> cb = widget->Utf32Converter.from_bytes(GetClipboardContents());
                 widget->Input.insert(widget->CursorPosition, cb);
                 widget->CursorPosition += cb.size();
                 handled = true;
@@ -319,4 +320,116 @@ namespace Ogl::Widgets
     };
 
     inline std::wstring_convert<std::codecvt_utf8<unsigned int>, unsigned int> InputField::Utf32Converter = {};
+
+    struct Slider : Widget
+    {
+        float Value;
+        float MinValue;
+        float MaxValue;
+        float Step;
+
+        BitmapFont Font;
+        Color SliderColor;
+        Color BaseColor;
+        Texture SliderTexture;
+        Texture BaseTexture;
+
+        float SliderWidth;
+        float RelativeTextSize; //text's height relative to the widget height, i.e. if this is set to 0.5 then half of the widget will be occupied by the slider and the other half by text underneath
+        unsigned int StepsToDraw;
+        
+        bool Dragging = false;
+
+        Slider(
+            Vec2 position,
+            Vec2 dimensions,
+            float value,
+            float minValue,
+            float maxValue,
+            float step,
+            float sliderWidth,
+            BitmapFont font,
+            Color sliderColor = COLOR_WHITE,
+            Color baseColor = COLOR_GREY,
+            Texture sliderTexture = Texture{},
+            Texture baseTexture = Texture{},
+            float relativeTextSize = 0.3f,
+            unsigned int stepsToDraw = 3) :
+            Widget(position, dimensions), Value(value), MinValue(minValue), MaxValue(maxValue), Step(step), SliderWidth(sliderWidth), 
+            Font(font), SliderColor(sliderColor), BaseColor(baseColor), SliderTexture(sliderTexture), BaseTexture(baseTexture), RelativeTextSize(relativeTextSize), StepsToDraw(stepsToDraw)
+        {
+            if (MaxValue <= MinValue)
+                throw std::runtime_error("Slider's maximal value should be greater than it's minimal value.");
+
+            Subscribe<MousePressEvent>(OnMousePress);
+            Subscribe<ScrollEvent>(OnScroll);
+        }
+
+        Vec2 GetSliderBasePosition()
+        {
+            return Position + Vec2(0, Dimensions.Y * RelativeTextSize);
+        }
+
+        Vec2 ValueToPosition(float value)
+        {
+            value = Clamp(value, MinValue, MaxValue);
+            value = std::floor(value / Step) * Step;
+            return GetSliderBasePosition() + Vec2(Dimensions.X - SliderWidth, 0) * ((value - MinValue) / (MaxValue - MinValue));
+        }
+
+        float PositionToValue(Vec2 pos)
+        {
+            float value = ((pos - Position).X / (Dimensions.X - SliderWidth)) * (MaxValue - MinValue) + MinValue;
+            value = std::floor(value / Step) * Step;
+            return Clamp(value, MinValue, MaxValue);
+        }
+
+        static bool OnMousePress(MousePressEvent& ev, void* data)
+        {
+            Slider* widget = reinterpret_cast<Slider*>(data);
+            if (!widget->Parent)
+                return false;
+
+            Vec2 mousePos = PointFromPixels(GetCursorPos(), widget->Parent->IsWorldSpace);
+            widget->Dragging = IsPointInBox(mousePos, widget->Position, widget->Position + widget->Dimensions) && ev.Action == GLFW_PRESS;
+            return false;
+        }
+
+        static bool OnScroll(ScrollEvent& ev, void* data)
+        {
+            Slider* widget = reinterpret_cast<Slider*>(data);
+            if (!widget->Parent)
+                return false;
+
+            Vec2 mousePos = PointFromPixels(GetCursorPos(), widget->Parent->IsWorldSpace);
+            if (IsPointInBox(mousePos, widget->Position, widget->Position + widget->Dimensions))
+                widget->Value = Clamp(widget->Value + widget->Step * (ev.OffsetY > 0 ? 1.0f : -1.0f), widget->MinValue, widget->MaxValue);
+            
+            return false;
+        }
+
+        void Draw() override
+        {
+            Parent->DrawRect(GetSliderBasePosition(), GetSliderBasePosition() + Vec2(Dimensions.X, Dimensions.Y * (1.0f - RelativeTextSize)), BaseColor, BaseTexture);
+            Vec2 sliderPos = ValueToPosition(Value);
+            Parent->DrawRect(sliderPos, sliderPos + Vec2(SliderWidth, Dimensions.Y * (1.0f - RelativeTextSize)), SliderColor, SliderTexture);
+
+            if (Dragging)
+                Value = PositionToValue(PointFromPixels(GetCursorPos(), Parent->IsWorldSpace));
+
+            for (unsigned int i = 0; i < StepsToDraw; i++)
+            {
+                float value = i * (MaxValue - MinValue) / (StepsToDraw - 1) + MinValue;
+                Vec2 pos = ValueToPosition(value);
+                Parent->DrawText(
+                    pos - Vec2(0, RelativeTextSize * Dimensions.Y),
+                    std::format("{:.1f}", value),
+                    Dimensions.Y * RelativeTextSize,
+                    Font,
+                    SliderColor,
+                    false,
+                    false);
+            }
+        }
+    };
 }

@@ -6,10 +6,10 @@ namespace Ogl
 {
     struct Vec2
     {
-        float X = 0;
-        float Y = 0;
+        float X;
+        float Y;
 
-        Vec2() {};
+        Vec2() : X(0), Y(0) {};
 
         Vec2(float xy) : X(xy), Y(xy) {}
 
@@ -31,6 +31,21 @@ namespace Ogl
         static Vec2 FromAngle(float angle)
         {
             return Vec2(cosf(angle), sinf(angle));
+        }
+
+        Vec2 Round()
+        {
+            return Vec2(std::roundf(X), std::roundf(Y));
+        }
+
+        Vec2 Floor()
+        {
+            return Vec2(std::floorf(X), std::floorf(Y));
+        }
+
+        Vec2 Ceil()
+        {
+            return Vec2(std::ceilf(X), std::ceilf(Y));
         }
 
         Vec2 Rotated(float angle)
