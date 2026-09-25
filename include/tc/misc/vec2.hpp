@@ -2,7 +2,7 @@
 
 #include <cmath>
 
-namespace Ogl
+namespace Tc
 {
     struct Vec2
     {

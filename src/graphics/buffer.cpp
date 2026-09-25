@@ -1,7 +1,11 @@
-#include "ogl/ogl.hpp"
+#include <stdexcept>
+#include "glad/glad.h"
+#include "tc/graphics/buffer.hpp"
+
+namespace Tcg = Tc::Graphics;
 
 //not doing all of this in constructor since glad must be initialized beforehand
-void Ogl::Buffer::Initialize(
+void Tcg::Buffer::Initialize(
     unsigned int name,
     unsigned int copyName,
     unsigned int size,
@@ -20,7 +24,7 @@ void Ogl::Buffer::Initialize(
     glBufferData(binding, size, nullptr, Usage);
 }
 
-size_t Ogl::Buffer::AddBlock(unsigned int size)
+size_t Tcg::Buffer::AddBlock(unsigned int size)
 {
     BufferBlock block;
     if (Blocks.empty())
@@ -38,7 +42,7 @@ size_t Ogl::Buffer::AddBlock(unsigned int size)
     return Blocks.size() - 1;
 }
 
-void Ogl::Buffer::ResizeBlock(size_t index, unsigned int size)
+void Tcg::Buffer::ResizeBlock(size_t index, unsigned int size)
 {
     BufferBlock& block = Blocks[index];
 
@@ -64,7 +68,7 @@ void Ogl::Buffer::ResizeBlock(size_t index, unsigned int size)
     block.Size = size;
 }
 
-void Ogl::Buffer::RemoveBlock(size_t index)
+void Tcg::Buffer::RemoveBlock(size_t index)
 {
     ResizeBlock(index, 0);
     Blocks.erase(Blocks.begin() + index);

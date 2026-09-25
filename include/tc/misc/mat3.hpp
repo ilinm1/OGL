@@ -1,8 +1,10 @@
 #pragma once
 
-#include <vec2.hpp>
+#include "vec2.hpp"
 
-namespace Ogl
+//'Mat3' class
+
+namespace Tc
 {
     //3x3 matrix
     struct Mat3

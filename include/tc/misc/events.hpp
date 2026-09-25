@@ -1,5 +1,11 @@
+#pragma once
 
-namespace Ogl
+#include <set>
+#include <functional>
+
+//'Subscription' and 'Subscriber' classes, methods for working with events, input events
+
+namespace Tc
 {
     template <class T>
     using EventHandler = bool(*)(T&, void*); //accepts event & data, returns whether event has been handled (if it has been then other handlers won't be called)
@@ -31,9 +37,9 @@ namespace Ogl
     };
 
     template <class T>
-    struct std::hash<Ogl::Subscription<T>>
+    struct std::hash<Tc::Subscription<T>>
     {
-        std::size_t operator()(const Ogl::Subscription<T>& sub) const noexcept
+        std::size_t operator()(const Tc::Subscription<T>& sub) const noexcept
         {
             return ((std::hash<void*>()(sub.Handler) ^ (std::hash<void*>()(sub.Data) << 1)) >> 1);
         }
@@ -101,8 +107,8 @@ namespace Ogl
         template <class T>
         void Subscribe(EventHandler<T> handler, int priority)
         {
-            Subscription<T> sub = Ogl::Subscribe(handler, this, priority);
-            UnsubHandlers.push_back(std::function<void()>([sub]() { Ogl::Unsubscribe(sub); }));
+            Subscription<T> sub = Tc::Subscribe(handler, this, priority);
+            UnsubHandlers.push_back(std::function<void()>([sub]() { Tc::Unsubscribe(sub); }));
         }
 
         template <class T>

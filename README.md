@@ -1,1 +1,1 @@
-A simple 2D OpenGL renderer.
+2D game engine/app framework thing, written using as little third-party libraries as possible

@@ -1,7 +1,5 @@
 #pragma once
 
-#include "ogl/ogl.hpp"
-
 #define STRINGIFY_(x) #x
 #define STRINGIFY(x) STRINGIFY_(x)
 

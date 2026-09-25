@@ -1,11 +1,31 @@
-#include <codecvt>
-#include "ogl/ogl.hpp"
+#include "tc/graphics/context.hpp"
+#include "tc/graphics/layer.hpp"
+
+namespace Tcg = Tc::Graphics;
+
+Tcg::Layer::Layer(
+    bool isWorldSpace,
+    unsigned int primitiveType,
+    unsigned int drawingHeight,
+    size_t renderingDataSize) :
+    IsWorldSpace(isWorldSpace),
+    PrimitiveType(primitiveType),
+    DrawingHeight(drawingHeight),
+    RenderingDataSize(renderingDataSize),
+    RenderingData(new char[RenderingDataSize]) {}
+
+void Tcg::Layer::Draw() {}
+
+Tcg::Layer::~Layer()
+{
+    delete[] RenderingData;
+}
 
 //drawing methods
 
 //writes 'count' vertices to the buffer 'buf' of size 'size'
 //null can be passed to 'texCoords' and 'colors' parameters to omit them
-void Ogl::Layer::WriteVertexData(const Vec2* coords, const Vec2* texCoords, const Color* colors, Texture texture, size_t count)
+void Tcg::Layer::WriteVertexData(const Vec2* coords, const Vec2* texCoords, const Color* colors, Texture texture, size_t count)
 {
     if (RenderingDataSize - RenderingDataUsed < count * VERT_SIZE)
     {
@@ -41,7 +61,7 @@ void Ogl::Layer::WriteVertexData(const Vec2* coords, const Vec2* texCoords, cons
 //draws a triangle from three points in world/screen space (depending on layer's space) with the specified texture
 //'color' is modulate color (alpha can be set to zero to ignore it)
 //if 'matchResolution' is set the texture will be matched to it's real resolution, otherwise stretched to fully fit the triangle
-void Ogl::Layer::DrawTriangle(Vec2 a, Vec2 b, Vec2 c, Color color, Texture texture, bool matchResolution)
+void Tcg::Layer::DrawTriangle(Vec2 a, Vec2 b, Vec2 c, Color color, Texture texture, bool matchResolution)
 {
     const Vec2 coords[3] = { a, b, c };
 
@@ -49,7 +69,7 @@ void Ogl::Layer::DrawTriangle(Vec2 a, Vec2 b, Vec2 c, Color color, Texture textu
     Vec2 min = Vec2::Min(Vec2::Min(a, b), c);
     Vec2 aabb = max - min;
 
-    TextureDimensions dimensions = Ogl::TextureDimensionsVector[texture.Index];
+    TextureDimensions dimensions = TextureDimensionsVector[texture.Index];
     Vec2 texSize = Vec2(1);
     if (matchResolution)
     {
@@ -59,7 +79,7 @@ void Ogl::Layer::DrawTriangle(Vec2 a, Vec2 b, Vec2 c, Color color, Texture textu
     }
 
     const Vec2 texCoords[3] =
-    {  
+    {
         { (a.X - min.X) * texSize.X / aabb.X, (a.Y - min.Y) * texSize.Y / aabb.Y },
         { (b.X - min.X) * texSize.X / aabb.X, (b.Y - min.Y) * texSize.Y / aabb.Y },
         { (c.X - min.X) * texSize.X / aabb.X, (c.Y - min.Y) * texSize.Y / aabb.Y }
@@ -77,7 +97,7 @@ void Ogl::Layer::DrawTriangle(Vec2 a, Vec2 b, Vec2 c, Color color, Texture textu
 //if 'matchResolution' is set then the texture will be matched to it's real resolution, otherwise stretched to fully fit the rectangle
 //if 'mirrorX'/'mirrorY' is set then the texture will be mirrored
 //if 'swapXY' is set then the texture will be drawn as if it's rotated by 90 degrees counter-clockwise
-void Ogl::Layer::DrawRect(Vec2 a, Vec2 b, Color color, Texture texture, bool matchResolution, bool mirrorX, bool mirrorY, bool swapXY)
+void Tcg::Layer::DrawRect(Vec2 a, Vec2 b, Color color, Texture texture, bool matchResolution, bool mirrorX, bool mirrorY, bool swapXY)
 {
     const Vec2 coords[6] =
     {
@@ -89,7 +109,7 @@ void Ogl::Layer::DrawRect(Vec2 a, Vec2 b, Color color, Texture texture, bool mat
         a
     };
 
-    TextureDimensions dimensions = Ogl::TextureDimensionsVector[texture.Index];
+    TextureDimensions dimensions = TextureDimensionsVector[texture.Index];
     Vec2 texSize = Vec2(1);
     if (matchResolution)
     {
@@ -147,7 +167,7 @@ void Ogl::Layer::DrawRect(Vec2 a, Vec2 b, Color color, Texture texture, bool mat
 //if 'multiline' is set then new line will be created after reading newline
 //if 'bounded' is set then text area will be limited by the 'maxWidth' & 'maxHeight' parameters (in NDC/in-world meters)
 //returns vector of drawn glyph positions (their bottom left corners)
-std::vector<Ogl::Vec2> Ogl::Layer::DrawText(Vec2 pos, std::string text, float scale, BitmapFont& font, Color color, bool matchResolution, bool multiline, bool bounded, float maxWidth, float maxHeight)
+std::vector<Tc::Vec2> Tcg::Layer::DrawText(Vec2 pos, std::string text, float scale, BitmapFont& font, Color color, bool matchResolution, bool multiline, bool bounded, float maxWidth, float maxHeight)
 {
     static std::wstring_convert<std::codecvt_utf8<unsigned int>, unsigned int> utf8converter;
     std::basic_string<unsigned int> textUtf32 = utf8converter.from_bytes(text);
@@ -155,12 +175,12 @@ std::vector<Ogl::Vec2> Ogl::Layer::DrawText(Vec2 pos, std::string text, float sc
 }
 
 //expects an utf32 string
-std::vector<Ogl::Vec2> Ogl::Layer::DrawText(Vec2 pos, std::basic_string<unsigned int> text, float scale, BitmapFont& font, Color color, bool matchResolution, bool multiline, bool bounded, float maxWidth, float maxHeight)
+std::vector<Tc::Vec2> Tcg::Layer::DrawText(Vec2 pos, std::basic_string<unsigned int> text, float scale, BitmapFont& font, Color color, bool matchResolution, bool multiline, bool bounded, float maxWidth, float maxHeight)
 {
     if (!text.empty() && !font.IsValid())
         throw std::runtime_error("Invalid font.");
 
-    float lineHeight = (matchResolution ? Ogl::SizeFromPixels(Vec2(font.MaxHeight), IsWorldSpace).X : 1.0f) * scale;
+    float lineHeight = (matchResolution ? SizeFromPixels(Vec2(font.MaxHeight), IsWorldSpace).X : 1.0f) * scale;
     std::vector<Vec2> glyphPositions;
     Vec2 currentPos = pos;
     for (unsigned int codepoint : text)
@@ -186,9 +206,9 @@ std::vector<Ogl::Vec2> Ogl::Layer::DrawText(Vec2 pos, std::basic_string<unsigned
             throw std::runtime_error("Character not supported by font.");
 
         Texture characterTexture = Textures[index];
-        TextureDimensions dimensions = Ogl::TextureDimensionsVector[characterTexture.Index];
+        TextureDimensions dimensions = TextureDimensionsVector[characterTexture.Index];
         Vec2 characterSize = (matchResolution ?
-            Ogl::SizeFromPixels(Vec2(dimensions.Width, dimensions.Height), IsWorldSpace) :
+            SizeFromPixels(Vec2(dimensions.Width, dimensions.Height), IsWorldSpace) :
             Vec2(static_cast<float>(dimensions.Width) / dimensions.Height, 1.0f)) * scale;
         Vec2 upperRightPoint = currentPos + characterSize;
 
@@ -218,7 +238,7 @@ std::vector<Ogl::Vec2> Ogl::Layer::DrawText(Vec2 pos, std::basic_string<unsigned
 }
 
 //FOR LAYERS USING "GL_LINES" PRIMITIVE
-void Ogl::Layer::DrawLine(Vec2 a, Vec2 b, Color color)
+void Tcg::Layer::DrawLine(Vec2 a, Vec2 b, Color color)
 {
     const Vec2 coords[2] = { a, b };
     const Color colors[2] = { color, color };

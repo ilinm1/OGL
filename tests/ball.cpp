@@ -1,14 +1,16 @@
 #include <format>
 #include <random>
-#include "ogl/ogl.hpp"
+#include "tc/graphics.hpp"
+
+namespace Tcg = Tc::Graphics;
 
 #define PI 3.1415
 
-struct TriangleLayer : Ogl::Layer
+struct TriangleLayer : Tcg::Layer
 {
-    Ogl::Texture Texture;
+    Tcg::Texture Texture;
 
-    TriangleLayer() : Texture(Ogl::ResolveTexture("test.png"))
+    TriangleLayer() : Texture(Tcg::ResolveTexture("test.png"))
     {
         Redraw = true;
     }
@@ -18,29 +20,29 @@ struct TriangleLayer : Ogl::Layer
         if (!Redraw)
             return;
 
-        DrawTriangle(Ogl::Vec2(-0.75f, -0.75f), Ogl::Vec2(0.75f, -0.75f), Ogl::Vec2(0.0f, 0.75f), COLOR_TRANSPARENT, Texture);
+        DrawTriangle(Tc::Vec2(-0.75f, -0.75f), Tc::Vec2(0.75f, -0.75f), Tc::Vec2(0.0f, 0.75f), COLOR_TRANSPARENT, Texture);
     }
 };
 
-struct BallLayer : Ogl::Layer
+struct BallLayer : Tcg::Layer
 {
-    Ogl::Texture Texture;
+    Tcg::Texture Texture;
 
-    Ogl::Color BallColor;
-    Ogl::Vec2 BallPos = Ogl::Vec2(0.0f);
-    Ogl::Vec2 BallVelocity;
+    Tc::Color BallColor;
+    Tc::Vec2 BallPos = Tc::Vec2(0.0f);
+    Tc::Vec2 BallVelocity;
     float VelocityAngle;
     float TotalTime = 0.0f;
 
-    Ogl::Color GradientColor1 = Ogl::Color(255, 0, 0, 128);
-    Ogl::Color GradientColor2 = Ogl::Color(0, 0, 255, 128);
+    Tc::Color GradientColor1 = Tc::Color(255, 0, 0, 128);
+    Tc::Color GradientColor2 = Tc::Color(0, 0, 255, 128);
     const float GradientTime = 10.0f;
 
-    const Ogl::Vec2 BallSize = Ogl::Vec2(0.5f);
+    const Tc::Vec2 BallSize = Tc::Vec2(0.5f);
     const float BallSpeed = 1.0f;
     const float TimeStep = 0.1f;
     
-    BallLayer() : Ogl::Layer(true, GL_TRIANGLES, HEIGHT_MAX), Texture(Ogl::ResolveTexture("test.png"))
+    BallLayer() : Tcg::Layer(true, GL_TRIANGLES, HEIGHT_MAX), Texture(Tcg::ResolveTexture("test.png"))
     {
         std::default_random_engine engine;
         engine.seed(std::time(nullptr));
@@ -48,7 +50,7 @@ struct BallLayer : Ogl::Layer
         distribution.reset();
 
         VelocityAngle = 2.0f * PI * distribution(engine);
-        BallVelocity = Ogl::Vec2::FromAngle(VelocityAngle) * BallSpeed;
+        BallVelocity = Tc::Vec2::FromAngle(VelocityAngle) * BallSpeed;
     }
 
     float Clamp(float v, float min, float max)
@@ -58,13 +60,13 @@ struct BallLayer : Ogl::Layer
         return v;
     }
 
-    Ogl::Color GetGradientColor(float t)
+    Tc::Color GetGradientColor(float t)
     {
         t = fmod(t / GradientTime, 1.0f);
 
         if (t <= TimeStep / GradientTime)
         {
-            Ogl::Color oldColor = GradientColor1;
+            Tc::Color oldColor = GradientColor1;
             GradientColor1 = GradientColor2;
             GradientColor2 = oldColor;
         }
@@ -79,33 +81,33 @@ struct BallLayer : Ogl::Layer
         BallColor = GetGradientColor(TotalTime);
         DrawRect(BallPos, BallPos + BallSize, BallColor, Texture);
 
-        Ogl::Vec2 bounds = Ogl::CameraSize / 2;
+        Tc::Vec2 bounds = Tcg::CameraSize / 2;
         if (BallPos.X + BallSize.X > bounds.X || BallPos.X < -bounds.X)
         {
             BallPos.X = Clamp(BallPos.X, -bounds.X, bounds.X);
             VelocityAngle = PI - VelocityAngle;
-            BallVelocity = Ogl::Vec2::FromAngle(VelocityAngle) * BallSpeed;
+            BallVelocity = Tc::Vec2::FromAngle(VelocityAngle) * BallSpeed;
         }
         if (BallPos.Y + BallSize.Y > bounds.Y || BallPos.Y < -bounds.Y)
         {
             BallPos.Y = Clamp(BallPos.Y, -bounds.Y, bounds.Y);
             VelocityAngle = -VelocityAngle;
-            BallVelocity = Ogl::Vec2::FromAngle(VelocityAngle) * BallSpeed;
+            BallVelocity = Tc::Vec2::FromAngle(VelocityAngle) * BallSpeed;
         }
     }
 };
 
 int main()
 {
-    Ogl::Initialize(300, 300, "Ball");
-    Ogl::SetCameraSize(Ogl::Vec2(3.0f));
+    Tcg::Initialize(300, 300, "Ball");
+    Tcg::SetCameraSize(Tc::Vec2(3.0f));
 
     TriangleLayer triangleLayer = {};
-    Ogl::AddLayer(&triangleLayer);
+    Tcg::AddLayer(&triangleLayer);
 
     BallLayer ballLayer = {};
-    Ogl::AddLayer(&ballLayer);
+    Tcg::AddLayer(&ballLayer);
 
-    Ogl::UpdateLoop();
+    Tcg::UpdateLoop();
     return 0;
 }

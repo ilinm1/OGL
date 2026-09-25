@@ -1,5 +1,4 @@
 #include "ogl/ogl.hpp"
-#include "ogl/widgets.hpp"
 
 struct CalculatorLayer : Ogl::Widgets::WidgetLayer
 {
@@ -58,6 +57,17 @@ struct CalculatorLayer : Ogl::Widgets::WidgetLayer
 			&OnCalculateButtonPress,
 			"Calculate",
 			font));
+
+		AddWidget(new Ogl::Widgets::Slider(
+			Ogl::Vec2(-0.9f, -0.6f),
+			Ogl::Vec2(1.8f, 0.2f),
+			0.0f,
+			0.0f,
+			100.0f,
+			10.0f,
+			0.2f,
+			font
+		));
 	}
 
 	~CalculatorLayer()
@@ -102,7 +112,7 @@ struct CalculatorLayer : Ogl::Widgets::WidgetLayer
 
 int main()
 {
-	Ogl::Initialize(300, 300, "Calculator", false);
+	Ogl::Initialize(300, 300, "Calculator", false, false);
 	CalculatorLayer layer;
 	Ogl::AddLayer(&layer);
 	Ogl::UpdateLoop();
