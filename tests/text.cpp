@@ -1,31 +1,33 @@
 #include <codecvt>
-#include "ogl/ogl.hpp"
+#include "tc/graphics.hpp"
+
+namespace Tcg = Tc::Graphics;
 
 const float PixelsPerMeter = 50.0f;
 
-struct TextLayer : Ogl::Layer
+struct TextLayer : Tcg::Layer
 {
-    Ogl::BitmapFont Font;
+    Tcg::BitmapFont Font;
     std::string Text = "Use arrows to move the camera.\nScroll to zoom in/out.\nYou can use enter, backspace and paste with ctrl + V.\n:)";
     std::wstring_convert<std::codecvt_utf8<unsigned int>, unsigned int> Utf32Converter;
 
-    TextLayer() : Ogl::Layer(true, GL_TRIANGLES), Font(Ogl::ResolveFont("test.bdf"))
+    TextLayer() : Tcg::Layer(true, GL_TRIANGLES), Font(Tcg::ResolveFont("test.bdf"))
     {
         Redraw = true;
 
-        Subscribe<Ogl::WindowResizeEvent>(&OnWindowResize);
-        Subscribe<Ogl::KeyPressEvent>(&OnKeyPress);
-        Subscribe<Ogl::CharacterEvent>(&OnCharacterReceived);
-        Subscribe<Ogl::ScrollEvent>(&OnScroll);
+        Subscribe<Tcg::WindowResizeEvent>(&OnWindowResize);
+        Subscribe<Tcg::KeyPressEvent>(&OnKeyPress);
+        Subscribe<Tcg::CharacterEvent>(&OnCharacterReceived);
+        Subscribe<Tcg::ScrollEvent>(&OnScroll);
     }
 
-    static bool OnWindowResize(Ogl::WindowResizeEvent& ev, void* data)
+    static bool OnWindowResize(Tcg::WindowResizeEvent& ev, void* data)
     {
-        Ogl::SetCameraSize(Ogl::Vec2(ev.Width, ev.Height) / PixelsPerMeter);
+        Tcg::SetCameraSize(Tc::Vec2(ev.Width, ev.Height) / PixelsPerMeter);
         return false;
     }
 
-    static bool OnKeyPress(Ogl::KeyPressEvent& ev, void* data)
+    static bool OnKeyPress(Tcg::KeyPressEvent& ev, void* data)
     {
         if (ev.Action == GLFW_RELEASE)
             return false;
@@ -42,7 +44,7 @@ struct TextLayer : Ogl::Layer
 
         if (ev.Key == GLFW_KEY_V && ev.Modifiers & GLFW_MOD_CONTROL)
         {
-            text.append(Ogl::GetClipboardContents());
+            text.append(Tcg::GetClipboardContents());
             layer.Redraw = true;
             return true;
         }
@@ -57,7 +59,7 @@ struct TextLayer : Ogl::Layer
         return false;
     }
 
-    static bool OnCharacterReceived(Ogl::CharacterEvent& ev, void* data)
+    static bool OnCharacterReceived(Tcg::CharacterEvent& ev, void* data)
     {
         TextLayer& layer = *reinterpret_cast<TextLayer*>(data);
 
@@ -68,39 +70,39 @@ struct TextLayer : Ogl::Layer
         return true;
     }
 
-    static bool OnScroll(Ogl::ScrollEvent& ev, void* data)
+    static bool OnScroll(Tcg::ScrollEvent& ev, void* data)
     {
-        Ogl::SetCameraScale(Ogl::CameraScale + ev.OffsetY * 0.05f);
+        Tcg::SetCameraScale(Tcg::CameraScale + ev.OffsetY * 0.05f);
         return true;
     }
 
     void Draw() override
     {
-        if (Ogl::IsKeyPressed(GLFW_KEY_UP))
-            Ogl::SetCameraPosition(Ogl::CameraPosition + Ogl::Vec2(0.0f, 0.05f));
+        if (Tcg::IsKeyPressed(GLFW_KEY_UP))
+            Tcg::SetCameraPosition(Tcg::CameraPosition + Tc::Vec2(0.0f, 0.05f));
 
-        if (Ogl::IsKeyPressed(GLFW_KEY_DOWN))
-            Ogl::SetCameraPosition(Ogl::CameraPosition + Ogl::Vec2(0.0f, -0.05f));
+        if (Tcg::IsKeyPressed(GLFW_KEY_DOWN))
+            Tcg::SetCameraPosition(Tcg::CameraPosition + Tc::Vec2(0.0f, -0.05f));
 
-        if (Ogl::IsKeyPressed(GLFW_KEY_LEFT))
-            Ogl::SetCameraPosition(Ogl::CameraPosition + Ogl::Vec2(-0.05f, 0.0f));
+        if (Tcg::IsKeyPressed(GLFW_KEY_LEFT))
+            Tcg::SetCameraPosition(Tcg::CameraPosition + Tc::Vec2(-0.05f, 0.0f));
 
-        if (Ogl::IsKeyPressed(GLFW_KEY_RIGHT))
-            Ogl::SetCameraPosition(Ogl::CameraPosition + Ogl::Vec2(0.05f, 0.0f));
+        if (Tcg::IsKeyPressed(GLFW_KEY_RIGHT))
+            Tcg::SetCameraPosition(Tcg::CameraPosition + Tc::Vec2(0.05f, 0.0f));
 
         if (Redraw)
-            DrawText(Ogl::Vec2(0.0f), Text, 1.0f, Font);
+            DrawText(Tc::Vec2(0.0f), Text, 1.0f, Font);
     }
 };
 
 int main()
 {
-    Ogl::Initialize(500, 500, "Text");
-    Ogl::SetCameraSize(Ogl::Vec2(500.0f) / PixelsPerMeter);
+    Tcg::Initialize(500, 500, "Text");
+    Tcg::SetCameraSize(Tc::Vec2(500.0f) / PixelsPerMeter);
 
     TextLayer textLayer = {};
-    Ogl::AddLayer(&textLayer);
+    Tcg::AddLayer(&textLayer);
 
-    Ogl::UpdateLoop();
+    Tcg::UpdateLoop();
     return 0;
 }

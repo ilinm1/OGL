@@ -1,66 +1,68 @@
-#include "ogl/ogl.hpp"
+#include "tc/graphics.hpp"
 
-struct CalculatorLayer : Ogl::Widgets::WidgetLayer
+namespace Tcg = Tc::Graphics;
+
+struct CalculatorLayer : Tcg::Widgets::WidgetLayer
 {
-	Ogl::Widgets::InputField* InputA;
-	Ogl::Widgets::InputField* InputB;
-	Ogl::Widgets::TextField* Output;
+	Tcg::Widgets::InputField* InputA;
+	Tcg::Widgets::InputField* InputB;
+	Tcg::Widgets::TextField* Output;
 
 	CalculatorLayer()
 	{
-		Ogl::BitmapFont& font = Ogl::ResolveFont("test.bdf");
+		Tcg::BitmapFont& font = Tcg::ResolveFont("test.bdf");
 
-		InputA = new Ogl::Widgets::InputField(
-			Ogl::Vec2(-1.0f, 0.7f),
-			Ogl::Vec2(0.6f, 0.2f),
+		InputA = new Tcg::Widgets::InputField(
+			Tc::Vec2(-1.0f, 0.7f),
+			Tc::Vec2(0.6f, 0.2f),
 			"2",
 			"A",
 			font);
 		AddWidget(InputA);
 
-		AddWidget(new Ogl::Widgets::TextField(
-			Ogl::Vec2(-0.4f, 0.7f),
-			Ogl::Vec2(0.2f),
+		AddWidget(new Tcg::Widgets::TextField(
+			Tc::Vec2(-0.4f, 0.7f),
+			Tc::Vec2(0.2f),
 			"+",
 			font,
 			1.0f,
 			true,
 			false,
-			Ogl::Texture{},
+			Tcg::Texture{},
 			COLOR_TRANSPARENT,
 			COLOR_WHITE));
 
-		InputB = new Ogl::Widgets::InputField(
-			Ogl::Vec2(-0.2f, 0.7f),
-			Ogl::Vec2(0.6f, 0.2f),
+		InputB = new Tcg::Widgets::InputField(
+			Tc::Vec2(-0.2f, 0.7f),
+			Tc::Vec2(0.6f, 0.2f),
 			"2",
 			"B",
 			font);
 		AddWidget(InputB);
 
-		Output = new Ogl::Widgets::TextField(
-			Ogl::Vec2(0.4f, 0.7f),
-			Ogl::Vec2(0.6f, 0.2f),
+		Output = new Tcg::Widgets::TextField(
+			Tc::Vec2(0.4f, 0.7f),
+			Tc::Vec2(0.6f, 0.2f),
 			"=4",
 			font,
 			1.0f,
 			false,
 			false,
-			Ogl::Texture{},
+			Tcg::Texture{},
 			COLOR_TRANSPARENT,
 			COLOR_WHITE);
 		AddWidget(Output);
 
-		AddWidget(new Ogl::Widgets::Button(
-			Ogl::Vec2(-0.9f),
-			Ogl::Vec2(1.8f, 0.2f),
+		AddWidget(new Tcg::Widgets::Button(
+			Tc::Vec2(-0.9f),
+			Tc::Vec2(1.8f, 0.2f),
 			&OnCalculateButtonPress,
 			"Calculate",
 			font));
 
-		AddWidget(new Ogl::Widgets::Slider(
-			Ogl::Vec2(-0.9f, -0.6f),
-			Ogl::Vec2(1.8f, 0.2f),
+		AddWidget(new Tcg::Widgets::Slider(
+			Tc::Vec2(-0.9f, -0.6f),
+			Tc::Vec2(1.8f, 0.2f),
 			0.0f,
 			0.0f,
 			100.0f,
@@ -72,15 +74,15 @@ struct CalculatorLayer : Ogl::Widgets::WidgetLayer
 
 	~CalculatorLayer()
 	{
-		for (Ogl::Widgets::Widget* widget : Widgets)
+		for (Tcg::Widgets::Widget* widget : Widgets)
 		{
 			delete widget;
 		}
 	}
 
-	static bool OnCalculateButtonPress(Ogl::MousePressEvent& ev, void* data)
+	static bool OnCalculateButtonPress(Tcg::MousePressEvent& ev, void* data)
 	{
-		CalculatorLayer* layer = reinterpret_cast<CalculatorLayer*>(reinterpret_cast<Ogl::Widgets::Button*>(data)->Parent);
+		CalculatorLayer* layer = reinterpret_cast<CalculatorLayer*>(reinterpret_cast<Tcg::Widgets::Button*>(data)->Parent);
 
 		float a, b;
 
@@ -90,7 +92,7 @@ struct CalculatorLayer : Ogl::Widgets::WidgetLayer
 		}
 		catch (std::invalid_argument)
 		{
-			layer->InputA->BaseColor = Ogl::Color(255, 200, 200);
+			layer->InputA->BaseColor = Tc::Color(255, 200, 200);
 			return true;
 		}
 
@@ -100,7 +102,7 @@ struct CalculatorLayer : Ogl::Widgets::WidgetLayer
 		}
 		catch (std::invalid_argument)
 		{
-			layer->InputB->BaseColor = Ogl::Color(255, 200, 200);
+			layer->InputB->BaseColor = Tc::Color(255, 200, 200);
 			return true;
 		}
 
@@ -112,9 +114,9 @@ struct CalculatorLayer : Ogl::Widgets::WidgetLayer
 
 int main()
 {
-	Ogl::Initialize(300, 300, "Calculator", false, false);
+	Tcg::Initialize(300, 300, "Calculator", false, false);
 	CalculatorLayer layer;
-	Ogl::AddLayer(&layer);
-	Ogl::UpdateLoop();
+	Tcg::AddLayer(&layer);
+	Tcg::UpdateLoop();
 	return 0;
 }
